@@ -220,54 +220,63 @@ function todayISO(){var d=new Date();return d.getFullYear()+"-"+String(d.getMont
 function dateTime(){return new Date().toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
 function subj(id){return subjects.find(function(s){return s.id===id})||subjects[0]}
 var builtInQuestionBanks=[];
-var builtInQuestionStatus="Loading source-keyed question banks…";
-function gunzipBase64Json(text){
- if(typeof DecompressionStream==="undefined")return Promise.reject(new Error("This browser does not support built-in question-bank decompression. Use a current version of Chrome, Edge or Firefox."));
- var bin=atob(String(text||"").replace(/\\s+/g,"")), bytes=new Uint8Array(bin.length);
- for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
- var stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
- return new Response(stream).json();
+var builtInQuestionStatus="Loading source-keyed PRC practice questions…";
+var BUILTIN_BANK_FILES=[
+ {subject:"prc1-fa",path:"prc1-fa.json.gz.b64"},
+ {subject:"prc2-qa",path:"prc2-qa.json.gz.b64"},
+ {subject:"prc3-bei",path:"prc3-bei.json.gz.b64"}
+];
+function unpackQuestionRows(data,expectedSubject){
+ if(!data||data.subject!==expectedSubject||!Array.isArray(data.questions))throw new Error("Question bank metadata is invalid for "+expectedSubject);
+ var out=[];
+ data.questions.forEach(function(row,i){
+  if(!Array.isArray(row)||row.length<7)return;
+  var options=row[5],answer=Number(row[6]);
+  if(!Array.isArray(options)||options.length<2||!Number.isInteger(answer)||answer<0||answer>=options.length)return;
+  var volume=Number(row[0])||0,chapterNo=Number(row[1])||0,questionNo=Number(row[2])||i+1;
+  var chapter=String(row[3]||"Uncategorised");
+  if(expectedSubject==="prc3-bei"&&volume)chapter="Volume "+volume+" · "+chapter;
+  out.push({
+   id:"builtin-"+expectedSubject+"-v"+volume+"-c"+chapterNo+"-q"+questionNo,
+   subject:expectedSubject,
+   chapter:chapter,
+   question:String(row[4]||"").trim(),
+   options:options.map(function(x){return String(x)}),
+   answer:answer,
+   explanation:""
+  });
+ });
+ if(!out.length)throw new Error("No valid questions in the "+expectedSubject+" bank.");
+ return out;
+}
+function fetchBuiltinBank(item){
+ var url="https://raw.githubusercontent.com/alvarophenoyosa/RK-CA-HUB/main/data/question-banks/"+item.path;
+ return fetch(url,{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status+" for "+item.subject);return r.text()}).then(function(encoded){
+  if(typeof DecompressionStream!=="function")throw new Error("This browser does not support compressed question-bank loading.");
+  var raw=atob(encoded.trim()),bytes=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  var stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).json();
+ }).then(function(data){return {subject:item.subject,questions:unpackQuestionRows(data,item.subject)}});
 }
 function loadBuiltInQuestionBanks(){
- var ids=["prc1-fa","prc2-qa","prc3-bei"];
- return Promise.all(ids.map(function(subject){
-  var url="data/question-banks/"+subject+".json.gz.b64";
-  return fetch(url,{cache:"no-cache"}).then(function(res){if(!res.ok)throw new Error("Could not fetch "+subject+" question data (HTTP "+res.status+").");return res.text()})
-   .then(gunzipBase64Json).then(function(data){
-    if(data.subject!==subject||!Array.isArray(data.questions))throw new Error("Question data validation failed for "+subject+".");
-    return data;
-   });
- })).then(function(sets){
-  var built=[];
-  sets.forEach(function(set){
-   set.questions.forEach(function(row){
-    if(!Array.isArray(row)||row.length<7)return;
-    var volume=Number(row[0]), chapterNumber=Number(row[1]), sourceQuestion=Number(row[2]);
-    var chapter=String(row[3]||("Chapter "+chapterNumber)), stem=String(row[4]||"").trim();
-    var options=row[5], answer=Number(row[6]);
-    if(!stem||!Array.isArray(options)||options.length<2||!Number.isInteger(answer)||answer<0||answer>=options.length)return;
-    built.push({
-     id:"icap-src-"+set.subject+"-v"+volume+"-c"+chapterNumber+"-q"+sourceQuestion,
-     subject:set.subject,chapter:chapter,question:stem,options:options.map(String),answer:answer,
-     explanation:"The answer index comes from the source question-bank key. A worked explanation was not available in the extracted item; review this chapter in the Study Text.",
-     source:"ICAP PRC question-bank PDF",sourceVolume:volume,sourceChapterNumber:chapterNumber,sourceQuestionNumber:sourceQuestion,builtIn:true
-    });
-   });
-  });
-  var seen=new Set(built.map(function(q){return q.id}));
-  var userQuestions=(state.questionBanks||[]).filter(function(q){return q&&!q.builtIn&&!seen.has(q.id)});
-  state.questionBanks=built.concat(userQuestions);
-  builtInQuestionBanks=built;
-  builtInQuestionStatus=built.length+" source-keyed practice questions loaded.";
+ builtInQuestionStatus="Loading source-keyed practice questions…";
+ return Promise.all(BUILTIN_BANK_FILES.map(function(item){return fetchBuiltinBank(item)})).then(function(banks){
+  var loaded=[];banks.forEach(function(bank){loaded=loaded.concat(bank.questions)});
+  var other=(state.questionBanks||[]).filter(function(q){return !String(q.id||"").startsWith("builtin-")});
+  state.questionBanks=other.concat(loaded);
+  builtInQuestionBanks=loaded;
+  builtInQuestionStatus="Loaded "+loaded.length+" source-keyed practice questions across all 3 PRC subjects. Explanations are shown only when present in the source data.";
   saveState();
-  if(currentPage==="mock")renderMock();else updateHeader();
-  return built;
+  if(currentPage==="mock"&&!quiz)renderMock();
+  return loaded;
  }).catch(function(err){
-  builtInQuestionStatus="Built-in questions could not load: "+err.message;
-  if(currentPage==="mock")renderMock();else updateHeader();
+  builtInQuestionStatus="The online practice bank could not load ("+String(err.message||err)+"). Check your connection and reload. You can still import a JSON bank.";
+  if(currentPage==="mock"&&!quiz)renderMock();
   return [];
  });
 }
+
 function questionPool(){return (state.questionBanks||[]).filter(function(q){return q&&q.question&&Array.isArray(q.options)&&q.options.length>=2&&Number.isInteger(Number(q.answer))&&Number(q.answer)>=0&&Number(q.answer)<q.options.length})}
 function questionsFor(id){return questionPool().filter(function(q){return q.subject===id})}
 function allQuestions(){return questionPool()}
@@ -338,13 +347,13 @@ function renderMock(){
  var total=questionsFor(selected).length;
  var tests=testStats();
  pageShell(
- '<div class="notice '+(total?"cyan":"red")+'"><b>Question bank status:</b> '+(total?"Imported practice questions are ready.":"No MCQs have been imported yet. Import the question-bank JSON extracted from your study material below. The mock simulator contains no built-in sample questions.")+'</div>'+
+ '<div class="notice '+(total?"cyan":"red")+'"><b>Question bank status:</b> '+(total?"Source-keyed practice questions are ready. "+total+" question(s) are available for this subject.":builtInQuestionStatus)+'</div>'+
  '<div class="grid two"><section class="panel"><div class="panel-head"><div><div class="eyebrow">CONFIGURE SESSION</div><h2 style="margin-top:6px;font-size:19px">Build your mock</h2><div class="small muted" style="margin-top:5px">Select subject, topic and exam time. Questions appear one at a time.</div></div><span class="tag">EXAM MODE</span></div>'+
  '<div class="form-grid"><div class="field full"><label for="mockSubject">SUBJECT / VOLUME</label><select id="mockSubject">'+subjectOptions(selected)+'</select></div><div class="field full"><label for="mockChapter">CHAPTER / TOPIC</label><select id="mockChapter"><option value="all">All available topics</option></select></div><div class="field"><label for="mockCount">QUESTION COUNT</label><select id="mockCount"><option value="30">30 MCQs</option><option value="50">50 MCQs</option></select></div><div class="field"><label for="mockMinutes">TIMER (MINUTES)</label><input id="mockMinutes" type="number" min="1" max="240" value="'+esc(state.settings.timerMinutes||45)+'"></div></div>'+
- '<div id="poolInfo" class="tool-result"><b style="color:var(--cyan)">'+total+' imported question(s) available</b><div class="small muted" style="margin-top:4px">Only imported question-bank items are used. No placeholder/sample items are mixed into your scores.</div></div>'+
+ '<div id="poolInfo" class="tool-result"><b style="color:var(--cyan)">'+total+' imported question(s) available</b><div class="small muted" style="margin-top:4px">Only source-keyed bank items are used. No placeholder/example questions are mixed into your scores.</div></div>'+
  '<div class="actions"><button class="btn primary" data-action="start-quiz" '+(total?"":"disabled")+' >Start exam session →</button><button class="btn ghost" data-action="import-question-bank">Import question bank JSON</button></div></section>'+
  '<section class="panel"><div class="panel-head"><div><h2>Test performance</h2><div class="small muted" style="margin-top:4px">Your completed attempts saved in this browser.</div></div><span class="tag green">LIVE</span></div><div class="progress-row"><div class="progress-ring" style="--p:'+tests.avg+'%"><strong>'+tests.avg+'%</strong></div><div class="progress-details"><h3>'+tests.n+' completed mock(s)</h3><p class="small muted">Average score across all attempts</p><div class="bar" style="margin:12px 0 8px"><span style="width:'+tests.passRate+'%"></span></div><div class="small muted">'+tests.passed+' passed using the 60% marker · '+(tests.n-tests.passed)+' need revision</div></div></div><div class="section-title"><div><h2>Mock rules</h2></div></div><div class="list-row"><div class="row-icon">01</div><div class="row-main"><strong>One question at a time</strong><small>Navigate by number or Next / Previous.</small></div></div><div class="list-row"><div class="row-icon">02</div><div class="row-main"><strong>Unique selection</strong><small>Questions are shuffled; no repeats within a single attempt.</small></div></div><div class="list-row"><div class="row-icon">03</div><div class="row-main"><strong>Automatic review log</strong><small>Wrong answers and explanations are kept in Mistakes Bank.</small></div></div></section></div>'+
- '<div class="section-title"><div><h2>Your question bank</h2><p>Import a JSON file built from your own permitted study material to expand the pool.</p></div></div>'+
+ '<div class="section-title"><div><h2>Your question bank</h2><p>A starter set of source-keyed practice questions is loaded for every subject. You can add more verified questions from a JSON file.</p></div></div>'+
  '<section class="panel"><div class="notice cyan">Expected JSON shape: <code>{"subject":"prc2-qa","questions":[{"chapter":"Topic title","question":"Question text","options":["A","B","C","D"],"answer":0,"explanation":"Why this is correct"}]}</code>. The answer value is a zero-based option index (0–3). Allowed subject IDs are shown below.</div><div class="grid three">'+subjects.map(function(s){return '<div class="file-card"><div class="row-icon">'+iconFor(s.id)+'</div><div class="row-main"><strong>'+esc(s.name)+'</strong><small><code>'+s.id+'</code> · '+questionsFor(s.id).length+' items available</small></div></div>'}).join("")+'</div><div class="actions"><button class="btn" data-action="import-question-bank">＋ Import JSON bank</button><button class="btn ghost" data-action="download-template">Download JSON template</button></div><input type="file" id="questionImportInput" accept=".json,application/json" class="hide"></section>'
  );
  updateMockChapter();
@@ -409,7 +418,7 @@ function renderLibrary(){
   var localButton=href&&found?' <button class="btn sm ghost" data-action="open-file" data-id="'+esc(found.id)+'">Open local</button>':'';
   return '<div class="resource-row"><div class="resource-icon">PDF</div><div class="resource-details"><strong>'+esc(r.title)+'</strong><small>'+esc(r.prc+' · '+r.type)+' · '+fileInfo+'</small></div>'+status+button+localButton+'</div>';
  }).join("");
- return '<div class="notice cyan"><b>Study library:</b> open the hosted course PDFs directly with one click. PDFs open in a new tab; the optional personal vault keeps your own local copies on this device.</div><div class="grid two"><section class="panel"><div class="panel-head"><div><h2>My personal study vault</h2><div class="small muted" style="margin-top:4px">Optional local PDF copies · this browser only</div></div><span class="tag">'+state.importedFiles.length+' FILES</span></div><div class="grid" style="gap:9px">'+fileRows+'</div><div class="actions"><button class="btn primary" data-action="upload-pdf">＋ Import personal PDFs</button><button class="btn danger" data-action="clear-imported-pdfs" '+(state.importedFiles.length?"":"disabled")+' >Clear local PDFs</button><input type="file" accept="application/pdf,.pdf" id="pdfInput" multiple class="hide"></div><p class="small muted">Clearing local PDFs does not remove your public catalogue links or study progress.</p></section><section class="panel"><div class="panel-head"><div><h2>Subject map</h2><div class="small muted" style="margin-top:4px">Aligned with ICAP&#39;s Education and Training Scheme 2025.</div></div></div>'+subjects.map(function(s){return '<div class="list-row"><div class="row-icon">'+iconFor(s.id)+'</div><div class="row-main"><strong>'+esc(s.prc+" · "+s.name)+'</strong><small>'+subjectTopicStats(s.id).done+' of '+subjectTopicStats(s.id).total+' tracked topics complete</small></div><button class="btn sm ghost" data-action="add-topic-subject" data-subject="'+s.id+'">Add topic</button></div>'}).join("")+'</section></div><div class="section-title"><div><h2>PRC course PDF catalogue</h2><p>Eight hosted files, arranged by the official three-subject structure and course volumes.</p></div><span class="tag">'+resourceCatalog.filter(function(r){return !!r.fileName}).length+' HOSTED FILES</span></div><section class="panel"><div class="panel-head"><div><h2>Study texts & question banks</h2><div class="small muted" style="margin-top:4px">Click Open PDF to open the public file. Import a personal copy only if you want it saved in this browser.</div></div><button class="btn sm ghost" data-action="upload-pdf">Import personal PDFs</button></div><div class="resource-list">'+catalogRows+'</div><div class="notice cyan" style="margin:15px 0 0"><b>PRC 2 — Quantitative Analysis for Business</b><br>One subject covering Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values.<br><br><b>PRC 3 — Business and Economic Insights</b><br>One subject. Volume 1 covers Business Insights; Volume 2 covers Economics. Progress and mock questions from both volumes are combined under PRC 3.</div></section><div class="section-title"><div><h2>Question-bank imports</h2><p>To run timed MCQs in the Mock tab, the questions need structured JSON data; hosting the Question Bank PDF alone does not automatically import its questions.</p></div><button class="btn sm ghost" data-action="go-mock">Open mock lab ↗</button></div><section class="panel"><div class="eyebrow">SUPPORTED SUBJECT IDS</div><div class="pill-row" style="margin-top:12px">'+subjects.map(function(s){return '<span class="tag">'+s.id+'</span>'}).join("")+'</div><p class="small muted" style="margin-bottom:0">No sample questions are bundled. Import a structured question bank in Mock to enable the timed simulator. Use subject ID <b>prc2-qa</b> for PRC 2 and <b>prc3-bei</b> for PRC 3 questions from either volume.</p></section>';
+ return '<div class="notice cyan"><b>Study library:</b> open the hosted course PDFs directly with one click. PDFs open in a new tab; the optional personal vault keeps your own local copies on this device.</div><div class="grid two"><section class="panel"><div class="panel-head"><div><h2>My personal study vault</h2><div class="small muted" style="margin-top:4px">Optional local PDF copies · this browser only</div></div><span class="tag">'+state.importedFiles.length+' FILES</span></div><div class="grid" style="gap:9px">'+fileRows+'</div><div class="actions"><button class="btn primary" data-action="upload-pdf">＋ Import personal PDFs</button><button class="btn danger" data-action="clear-imported-pdfs" '+(state.importedFiles.length?"":"disabled")+' >Clear local PDFs</button><input type="file" accept="application/pdf,.pdf" id="pdfInput" multiple class="hide"></div><p class="small muted">Clearing local PDFs does not remove your public catalogue links or study progress.</p></section><section class="panel"><div class="panel-head"><div><h2>Subject map</h2><div class="small muted" style="margin-top:4px">Aligned with ICAP&#39;s Education and Training Scheme 2025.</div></div></div>'+subjects.map(function(s){return '<div class="list-row"><div class="row-icon">'+iconFor(s.id)+'</div><div class="row-main"><strong>'+esc(s.prc+" · "+s.name)+'</strong><small>'+subjectTopicStats(s.id).done+' of '+subjectTopicStats(s.id).total+' tracked topics complete</small></div><button class="btn sm ghost" data-action="add-topic-subject" data-subject="'+s.id+'">Add topic</button></div>'}).join("")+'</section></div><div class="section-title"><div><h2>PRC course PDF catalogue</h2><p>Eight hosted files, arranged by the official three-subject structure and course volumes.</p></div><span class="tag">'+resourceCatalog.filter(function(r){return !!r.fileName}).length+' HOSTED FILES</span></div><section class="panel"><div class="panel-head"><div><h2>Study texts & question banks</h2><div class="small muted" style="margin-top:4px">Click Open PDF to open the public file. Import a personal copy only if you want it saved in this browser.</div></div><button class="btn sm ghost" data-action="upload-pdf">Import personal PDFs</button></div><div class="resource-list">'+catalogRows+'</div><div class="notice cyan" style="margin:15px 0 0"><b>PRC 2 — Quantitative Analysis for Business</b><br>One subject covering Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values.<br><br><b>PRC 3 — Business and Economic Insights</b><br>One subject. Volume 1 covers Business Insights; Volume 2 covers Economics. Progress and mock questions from both volumes are combined under PRC 3.</div></section><div class="section-title"><div><h2>Question-bank imports</h2><p>To run timed MCQs in the Mock tab, the questions need structured JSON data; hosting the Question Bank PDF alone does not automatically import its questions.</p></div><button class="btn sm ghost" data-action="go-mock">Open mock lab ↗</button></div><section class="panel"><div class="eyebrow">SUPPORTED SUBJECT IDS</div><div class="pill-row" style="margin-top:12px">'+subjects.map(function(s){return '<span class="tag">'+s.id+'</span>'}).join("")+'</div><p class="small muted" style="margin-bottom:0">A starter practice set is loaded automatically. Import a structured question bank in Mock to expand it. Use subject ID <b>prc2-qa</b> for PRC 2 and <b>prc3-bei</b> for PRC 3 questions from either volume.</p></section>';
 }
 function renderTopics(){
  var html='<section class="panel"><div class="panel-head"><div><h2>Topic coverage tracker</h2><div class="small muted" style="margin-top:4px">Official ICAP 2025 learning outcomes are pre-loaded. You can add extra subtopics from your study text.</div></div><span class="tag">'+topicStats().pct+'% COVERED</span></div><form id="topicForm"><div class="form-grid"><div class="field"><label>SUBJECT</label><select id="topicSubject">'+subjectOptions(subjects[0].id)+'</select></div><div class="field"><label>CHAPTER / TOPIC TITLE</label><input id="topicTitle" required maxlength="160" placeholder="e.g. enter the topic title from your text"></div><div class="field full"><label>OPTIONAL NOTE</label><input id="topicNote" maxlength="220" placeholder="Key concepts, page references, follow-up task…"></div></div><div class="actions"><button class="btn primary" type="submit">＋ Add topic</button></div></form></section><div class="section-title"><div><h2>Your topics</h2><p>Check off topics when you have completed them.</p></div><span class="small muted">'+topicStats().done+' / '+topicStats().total+' complete</span></div>';
