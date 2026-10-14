@@ -2,21 +2,20 @@
 
 A responsive personal study dashboard for CA-PRC preparation. The app is currently a **single-file HTML MVP** with embedded CSS and JavaScript, so it has no build step or package installation.
 
+## Publish with GitHub Pages
+1. Open this repository's **Settings → Pages**.
+2. Under **Build and deployment → Source**, choose **GitHub Actions**.
+3. Open the **Actions** tab and check the **Deploy to GitHub Pages** workflow. The workflow runs on pushes to `main), and can also be started manually.
+4. Once the workflow succeeds, open the published URL shown under **Settings → Pages** or in the workflow deployment summary.
+
 ## Run locally
 Download `index.html` and open it in a modern browser. For best behaviour with local PDF storage, use a small local web server (for example, VS Code Live Server) rather than a browser's private mode.
-
-## Enable GitHub Pages
-1. Open this repository's **Settings**.
-2. Choose **Pages** in the sidebar.
-3. Under **Build and deployment**, select **Deploy from a branch**.
-4. Choose branch `main` and folder `/(root)`, then save.
-5. Wait for GitHub Pages to publish the site and use the URL shown in Settings → Pages.
 
 ## Current features
 - Home dashboard with mock history, topic coverage, study-session time, and revision reminders.
 - Mock simulator with timer, chapter filter, question navigation, score report, and a local mistakes bank.
 - JSON question-bank import. Allowed subject IDs: `prc1-fa`, `prc2-qm`, `prc2-fm`, `prc3-bi`, `prc3-eco`.
-- Personal topic tracker, simple mind-map view, formula references, interest/annuity calculators, and illustrative linear demand/supply graph.
+- Personal topic tracker, simple mind-map view, formula references, interest/annuity calculators, and an illustrative linear demand/supply graph.
 - Student profile, progress snapshot, export/import of study data, and a live personal performance report.
 - Personal PDF files are stored in the current browser using IndexedDB; they are not sent to GitHub.
 
