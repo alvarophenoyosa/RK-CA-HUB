@@ -229,22 +229,33 @@ var BUILTIN_BANK_FILES=[
 function unpackQuestionRows(data,expectedSubject){
  if(!data||data.subject!==expectedSubject||!Array.isArray(data.questions))throw new Error("Question bank metadata is invalid for "+expectedSubject);
  var out=[];
+ function validAnswer(answer,options){
+  if(Array.isArray(answer))return answer.length>0&&answer.every(function(n){return Number.isInteger(Number(n))&&Number(n)>=0&&Number(n)<options.length});
+  return Number.isInteger(Number(answer))&&Number(answer)>=0&&Number(answer)<options.length;
+ }
+ function addQuestion(q){
+  if(!q||!q.question||!Array.isArray(q.options)||q.options.length<2||!validAnswer(q.answer,q.options))return;
+  var answer=Array.isArray(q.answer)?q.answer.map(Number):Number(q.answer);
+  var multi=!!q.multiSelect||Array.isArray(answer);
+  if(multi&&!Array.isArray(answer))answer=[answer];
+  if(!multi&&Array.isArray(answer))answer=answer[0];
+  out.push({id:String(q.id),subject:expectedSubject,chapter:String(q.chapter||"Uncategorised"),question:String(q.question).trim(),options:q.options.map(function(x){return String(x)}),answer:answer,multiSelect:multi,explanation:String(q.explanation||""),source:String(q.source||"ICAP PRC question bank")});
+ }
  data.questions.forEach(function(row,i){
-  if(!Array.isArray(row)||row.length<7)return;
-  var options=row[5],answer=Number(row[6]);
-  if(!Array.isArray(options)||options.length<2||!Number.isInteger(answer)||answer<0||answer>=options.length)return;
-  var volume=Number(row[0])||0,chapterNo=Number(row[1])||0,questionNo=Number(row[2])||i+1;
-  var chapter=String(row[3]||"Uncategorised");
-  if(expectedSubject==="prc3-bei"&&volume)chapter="Volume "+volume+" · "+chapter;
-  out.push({
-   id:"builtin-"+expectedSubject+"-v"+volume+"-c"+chapterNo+"-q"+questionNo,
-   subject:expectedSubject,
-   chapter:chapter,
-   question:String(row[4]||"").trim(),
-   options:options.map(function(x){return String(x)}),
-   answer:answer,
-   explanation:""
-  });
+  if(!Array.isArray(row)){addQuestion(Object.assign({},row,{id:row.id||("builtin-"+expectedSubject+"-q"+(i+1))}));return;}
+  var volume=0,chapterNo=0,questionNo=i+1,chapter="",question="",options=[],answer=null,multi=false;
+  if(row.length===6){
+   chapterNo=Number(row[0])||1;questionNo=Number(row[1])||i+1;question=String(row[2]||"");options=row[3];answer=row[4];multi=!!row[5];
+   chapter=Array.isArray(data.chapters)?String(data.chapters[chapterNo-1]||"Chapter "+chapterNo):String((data.chapters||{})[chapterNo]||"Chapter "+chapterNo);
+  }else if(row.length>=7&&Array.isArray(row[5])){
+   volume=Number(row[0])||0;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;chapter=String(row[3]||"Chapter "+chapterNo);question=String(row[4]||"");options=row[5];answer=row[6];multi=Array.isArray(answer);
+  }else if(row.length>=7&&Array.isArray(row[4])){
+   volume=Number(row[0])||1;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;question=String(row[3]||"");options=row[4];answer=row[5];multi=!!row[6];
+   var map=(data.chapters||{})[String(volume)]||[];chapter="Volume "+volume+" · "+String(map[chapterNo-1]||("Chapter "+chapterNo));
+  }else return;
+  if(!Array.isArray(options))return;
+  var id="builtin-"+expectedSubject+"-v"+volume+"-ch"+chapterNo+"-q"+questionNo;
+  addQuestion({id:id,subject:expectedSubject,chapter:chapter,question:question,options:options,answer:answer,multiSelect:multi,explanation:"",source:data.source||"ICAP PRC question bank"});
  });
  if(!out.length)throw new Error("No valid questions in the "+expectedSubject+" bank.");
  return out;
@@ -277,7 +288,21 @@ function loadBuiltInQuestionBanks(){
  });
 }
 
-function questionPool(){return (state.questionBanks||[]).filter(function(q){return q&&q.question&&Array.isArray(q.options)&&q.options.length>=2&&Number.isInteger(Number(q.answer))&&Number(q.answer)>=0&&Number(q.answer)<q.options.length})}
+function answerIsValid(answer,options){
+ if(Array.isArray(answer))return answer.length>0&&answer.every(function(n){return Number.isInteger(Number(n))&&Number(n)>=0&&Number(n)<options.length});
+ return Number.isInteger(Number(answer))&&Number(answer)>=0&&Number(answer)<options.length;
+}
+function questionPool(){return (state.questionBanks||[]).filter(function(q){return q&&q.question&&Array.isArray(q.options)&&q.options.length>=2&&answerIsValid(q.answer,q.options)})}
+function answerIndexes(answer){return (Array.isArray(answer)?answer:[answer]).map(Number).filter(Number.isInteger).sort(function(a,b){return a-b})}
+function answersEqual(picked,correct){
+ if(picked===undefined)return false;
+ var a=answerIndexes(picked),b=answerIndexes(correct);
+ return a.length===b.length&&a.every(function(v,i){return v===b[i]});
+}
+function formatAnswer(q,value){
+ if(value===undefined)return "Not answered";
+ return answerIndexes(value).map(function(i){return String.fromCharCode(65+i)+". "+String(q.options[i]||"")}).join("; ");
+}
 function questionsFor(id){return questionPool().filter(function(q){return q.subject===id})}
 function allQuestions(){return questionPool()}
 function currentTotalSeconds(){return (state.sessions||[]).reduce(function(sum,s){return sum+(Number(s.seconds)||0)},0)}
