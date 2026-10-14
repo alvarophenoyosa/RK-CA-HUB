@@ -247,7 +247,7 @@ function unpackQuestionRows(data,expectedSubject){
   if(row.length===6){
    chapterNo=Number(row[0])||1;questionNo=Number(row[1])||i+1;question=String(row[2]||"");options=row[3];answer=row[4];multi=!!row[5];
    chapter=Array.isArray(data.chapters)?String(data.chapters[chapterNo-1]||"Chapter "+chapterNo):String((data.chapters||{})[chapterNo]||"Chapter "+chapterNo);
-  }else if(row.length>=7&&Array.isArray(row[5])){
+  }else if(row.length>=7&&Array.isArray(row[5])&&typeof row[4]==="string"){
    volume=Number(row[0])||0;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;chapter=String(row[3]||"Chapter "+chapterNo);question=String(row[4]||"");options=row[5];answer=row[6];multi=Array.isArray(answer);
   }else if(row.length>=7&&Array.isArray(row[4])){
    volume=Number(row[0])||1;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;question=String(row[3]||"");options=row[4];answer=row[5];multi=!!row[6];
