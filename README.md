@@ -1,6 +1,6 @@
 # RK | CA - HUB
 
-A responsive CA-PRC study dashboard with a neon cyber interface, selectable themes, mock exams, subject progress, study utilities, a hosted PDF catalogue, and an optional local PDF vault. It is a **single-file HTML MVP** with no package install or build step. **This repository is public, so every committed PDF is publicly accessible. Keep original ICAP PDFs here only if your permission explicitly covers public online distribution. Personal-study permission alone may not cover redistribution.** If your permission is personal-use only, remove the source PDFs from the public repo and use the local vault for your own copies.
+A responsive CA-PRC study dashboard with a neon cyber interface, selectable themes, mock exams, subject progress, study utilities, one-click public PDF links, and an optional local PDF vault. It is a **single-file HTML MVP** with no package install or build step. This repository is public and the owner has confirmed permission to share the current course PDFs publicly.
 
 ## Themes
 - **Neon Grid** — original dark cyber grid.
@@ -25,7 +25,7 @@ Download `index.html` and open it in a modern browser. For more reliable local P
 ## Current features
 - HOME: study-time and streak metrics, subject coverage, recent mock attempts, and revision reminders.
 - MOCK: timed one-question-at-a-time MCQ simulator, question navigation, score report, mistakes bank, and JSON question-bank import.
-- STUDY: one-click hosted PDF catalogue grouped by PRC subject, optional browser-local PDF vault, topic tracker, mind-map workspace, formula references, interest/annuity calculators, and an illustrative Economics demand/supply plotter.
+- STUDY: one-click hosted PDF catalogue grouped by official PRC subject and volume, optional browser-local PDF vault, topic tracker, mind-map workspace, formula references, interest/annuity calculators, and an illustrative Economics demand/supply plotter.
 - PROFILE: student details, target date, topic coverage, study time, mock average, weak/strong subjects, and data export/import.
 - MERIT: personal live progress report, subject performance table, and export.
 - Four themes and score-dependent red → amber → green colours.
@@ -40,7 +40,7 @@ The Study catalogue lists these eight course PDFs, grouped by official subject a
 According to ICAP's 2025 syllabus, the website now uses the three official PRC subjects: **PRC 1 — Fundamentals of Accounting**, **PRC 2 — Quantitative Analysis for Business**, and **PRC 3 — Business and Economic Insights**. PRC 2 covers Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values. PRC 3's Business Insights and Economics books remain separate catalogue volumes, but share progress and mock tracking under one subject.
 
 ## PDF and privacy behaviour
-The Study catalogue currently opens only a user's local imported copy; it does not serve official PDFs as public downloads. The original PDFs are nevertheless still committed in this **public** repository's root, so anyone may be able to access them directly through GitHub. Confirm that your permission covers public online redistribution. If your permission is personal-study only, remove the PDF files from this public repo. The optional **Study → My personal study vault → Import personal PDFs** feature stores local copies in browser IndexedDB on that device and does not send them to GitHub.
+The Study catalogue provides one-click public links to the eight PDFs committed in this repository. The repository owner has confirmed that their permission covers public sharing of these study materials. Links point to files in the repository root and open in a new browser tab. The optional **Study → My personal study vault → Import personal PDFs** feature stores additional local copies in browser IndexedDB on that device.
 
 Profile, topic checklist, mock history, mistakes and study sessions are stored in browser local storage. They do not sync between devices or users. Export a JSON backup periodically. Clearing site data may remove this information.
 
