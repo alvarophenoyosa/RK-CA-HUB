@@ -305,7 +305,17 @@ function loadBuiltInQuestionBanks(){
  });
 }
 
-function questionPool(){return (builtInQuestionBanks||[]).concat(state.questionBanks||[]).filter(function(q){return q&&q.question&&Array.isArray(q.options)&&q.options.length>=2&&answerIsValid(q.answer,q.options)})}
+function answerIsValid(answer,options){
+ if(answer===undefined||answer===null||!Array.isArray(options)||options.length<2)return false;
+ function validIndex(value){
+  if(value===undefined||value===null||(typeof value==="string"&&!value.trim()))return false;
+  var n=Number(value);
+  return Number.isInteger(n)&&n>=0&&n<options.length;
+ }
+ if(Array.isArray(answer))return answer.length>0&&answer.every(validIndex);
+ return validIndex(answer);
+}
+function questionPool(){return (builtInQuestionBanks||[]).concat(Array.isArray(state.questionBanks)?state.questionBanks:[]).filter(function(q){return q&&String(q.question||"").trim()&&Array.isArray(q.options)&&q.options.length>=2&&answerIsValid(q.answer,q.options)})}
 function answerIndexes(answer){return (Array.isArray(answer)?answer:[answer]).map(Number).filter(Number.isInteger).sort(function(a,b){return a-b})}
 function answersEqual(picked,correct){
  if(picked===undefined)return false;
