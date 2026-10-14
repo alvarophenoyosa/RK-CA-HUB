@@ -12,11 +12,12 @@ Theme choice is saved in browser-local settings. Mock scores are colour-scaled f
 
 ## Publish with GitHub Pages
 1. Open repository **Settings → Pages**.
-2. Under **Build and deployment → Source**, choose **GitHub Actions**.
-3. Open the **Actions** tab and check **Deploy to GitHub Pages**. The workflow runs on pushes to `main` and can also be started manually.
-4. Once successful, open the published URL shown under **Settings → Pages** or in the workflow deployment summary.
+2. Under **Build and deployment → Source**, choose **Deploy from a branch**.
+3. Set branch to `main` and folder to `/(root)`, then save.
+4. Open the **Actions** tab and watch the automatically created **pages build and deployment** workflow.
+5. Once successful, open the published URL shown under **Settings → Pages**. For this repository it should be `https://alvarophenoyosa.github.io/RK-CA-HUB/`.
 
-The workflow cannot enable Pages if GitHub's repository settings or app permissions prohibit creating the Pages site; in that case enable Pages manually in Settings → Pages and rerun the workflow.
+This site is static HTML/CSS/JavaScript, so the default GitHub Pages branch deployment is enough; no custom build workflow is required.
 
 ## Run locally
 Download `index.html` and open it in a modern browser. For more reliable local PDF storage, use a local web server (for example, VS Code Live Server) and avoid private browsing mode.
