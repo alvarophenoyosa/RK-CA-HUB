@@ -1,6 +1,6 @@
 # RK | CA - HUB
 
-A responsive CA-PRC personal study dashboard with a neon cyber interface, selectable themes, mock exams, subject progress, study utilities, and a local PDF vault. It is a **single-file HTML MVP** with no package install or build step. The repository is public, so do not commit original ICAP PDFs unless written terms explicitly permit redistribution.
+A responsive CA-PRC study dashboard with a neon cyber interface, selectable themes, mock exams, subject progress, study utilities, a hosted PDF catalogue, and an optional local PDF vault. It is a **single-file HTML MVP** with no package install or build step. **This repository is public, so every committed PDF is publicly accessible. Keep original ICAP PDFs here only if your permission explicitly covers public online distribution. Personal-study permission alone may not cover redistribution.** If your permission is personal-use only, remove the source PDFs from the public repo and use the local vault for your own copies.
 
 ## Themes
 - **Neon Grid** — original dark cyber grid.
@@ -25,31 +25,32 @@ Download `index.html` and open it in a modern browser. For more reliable local P
 ## Current features
 - HOME: study-time and streak metrics, subject coverage, recent mock attempts, and revision reminders.
 - MOCK: timed one-question-at-a-time MCQ simulator, question navigation, score report, mistakes bank, and JSON question-bank import.
-- STUDY: local PDF vault, course PDF catalogue, topic tracker, mind-map workspace, formula references, interest/annuity calculators, and an illustrative Economics demand/supply plotter.
+- STUDY: one-click hosted PDF catalogue grouped by PRC subject, optional browser-local PDF vault, topic tracker, mind-map workspace, formula references, interest/annuity calculators, and an illustrative Economics demand/supply plotter.
 - PROFILE: student details, target date, topic coverage, study time, mock average, weak/strong subjects, and data export/import.
 - MERIT: personal live progress report, subject performance table, and export.
 - Four themes and score-dependent red → amber → green colours.
 
 ## PRC course PDF catalogue status
-The app lists the eight PDF files previously uploaded to the project workspace:
-- PRC 1 Financial Accounting Study Text and Question Bank
-- PRC 2 Volume 1 Quantitative Methods Study Text and Question Bank
-- PRC 3 Volume 1 Business Insights Study Text and MCQs
-- PRC 3 Volume 2 Economics Study Text and MCQs
+The Study catalogue links the eight PDFs present in the repository:
+- **PRC 1 — Fundamentals of Accounting:** Study Text and Question Bank
+- **PRC 2 — Quantitative Analysis for Business:** Study Text and Question Bank
+- **PRC 3, Volume 1 — Business Insights:** Study Text and MCQs
+- **PRC 3, Volume 2 — Economics:** Study Text and MCQs
 
-**PRC 2 Volume 2 Financial Management Study Text and Question Bank were not present in the supplied upload set.** Add them to the local vault when available.
+According to ICAP's 2025 syllabus, PRC 2 is one subject containing Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values. It is no longer split into separate QM and FM subjects in the website's progress and mock selectors.
 
 ## PDF and privacy behaviour
-The GitHub repository is public, so original ICAP study-text and question-bank PDFs are **not committed as public downloads**. The catalogue tracks which course files should be present. To open a PDF inside the site, use **Study → Study library → Import PDFs** and choose your own local copy. Imported PDFs are stored in browser IndexedDB on that device, not sent to GitHub.
+The catalogue opens hosted PDFs in a new tab. Since these files currently live in a **public** repository, anyone can access them from GitHub or from the website. Confirm that your permission covers public online redistribution before keeping original ICAP PDFs here. If not, remove the PDF files from the public repo; the site's optional **Study → My personal study vault → Import personal PDFs** stores a user's local copies in browser IndexedDB on that device and does not send them to GitHub.
 
 Profile, topic checklist, mock history, mistakes and study sessions are stored in browser local storage. They do not sync between devices or users. Export a JSON backup periodically. Clearing site data may remove this information.
 
 ## Question-bank import
 Subject IDs:
 - `prc1-fa` — Financial Accounting
-- `prc2-qm` — Quantitative Methods
-- `prc2-fm` — Financial Management
+- `prc2-qa` — Quantitative Analysis for Business
 - `prc3-bi` — Business Insights
 - `prc3-eco` — Economics
+
+Legacy progress and imported question data using `prc2-qm` or `prc2-fm` are normalised to `prc2-qa` when the site loads.
 
 **No MCQs are bundled with the site.** Placeholder/sample questions have been removed; the mock launcher remains disabled until a question bank is imported as JSON, so mock scores will only be based on imported items. Use the Mock page JSON template and importer to add source-backed practice items. The Merit page produces a personal study report, not an official ICAP result or merit list.
