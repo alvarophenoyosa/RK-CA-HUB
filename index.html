@@ -198,7 +198,7 @@ function clearPdfStoreSilently(){
 function resetAccidentalPdfImportsOnce(){
  var key="rkca-hub-local-pdf-vault-reset-v1";
  try{if(localStorage.getItem(key))return;localStorage.setItem(key,"1");}catch(e){}
- var names=new Set(resourceCatalog.map(function(r){return normaliseFilename(r.fileName)}).filter(Boolean));
+ var names=new Set(resourceCatalog.map(function(r){return normaliseFilename(r.fileName)}).filter(Boolean));names.add("prc-syllabus.pdf");
  var removed=(state.importedFiles||[]).filter(function(f){return names.has(normaliseFilename(f.name))});
  if(!removed.length)return;
  var ids=new Set(removed.map(function(f){return f.id}));
