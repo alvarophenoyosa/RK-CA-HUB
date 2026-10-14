@@ -24,8 +24,8 @@ Download `index.html` and open it in a modern browser. For more reliable local P
 
 ## Current features
 - HOME: study-time and streak metrics, subject coverage, recent mock attempts, and revision reminders.
-- MOCK: timed one-question-at-a-time MCQ simulator, question navigation, score report, mistakes bank, and JSON question-bank import.
-- STUDY: one-click hosted PDF catalogue grouped by official PRC subject and volume, optional browser-local PDF vault, topic tracker, mind-map workspace, formula references, interest/annuity calculators, and an illustrative Economics demand/supply plotter.
+- MOCK: timed one-question-at-a-time MCQ simulator, source-keyed built-in practice banks loaded from repository data, question navigation, score report, mistakes bank, and optional JSON question-bank import.
+- STUDY: one-click hosted PDF catalogue grouped by official PRC subject and volume, optional browser-local PDF vault with a clear-local-PDF action, 77 preloaded official syllabus learning outcomes, topic tracker, mind-map workspace, formula references, simple/compound interest and annuity calculators, an investment appraisal calculator (NPV, estimated IRR and payback), an illustrative Economics demand/supply plotter, and focus timer.
 - PROFILE: student details, target date, topic coverage, study time, mock average, weak/strong subjects, and data export/import.
 - MERIT: personal live progress report, subject performance table, and export.
 - Four themes and score-dependent red → amber → green colours.
@@ -52,4 +52,4 @@ Subject IDs:
 
 Legacy progress and imported question data using `prc2-qm` or `prc2-fm` are normalised to `prc2-qa`; old `prc3-bi` and `prc3-eco` items are normalised to `prc3-bei` when the site loads.
 
-**No MCQs are bundled with the site.** Placeholder/sample questions have been removed; the mock launcher remains disabled until a question bank is imported as JSON, so mock scores will only be based on imported items. Use the Mock page JSON template and importer to add source-backed practice items. The Merit page produces a personal study report, not an official ICAP result or merit list.
+**Built-in practice question set:** the Mock tab automatically loads 205 source-keyed MCQs from the uploaded question-bank materials: 50 PRC 1, 60 PRC 2, and 95 PRC 3 questions. These are selected chapter-covered items, not a claim that every question from every PDF has been digitised. Correct option indices are source-keyed; where the source did not provide a worked explanation, the site does not invent an official explanation. The JSON template/importer remains available for adding your own verified questions. The Merit page produces a personal study report, not an official ICAP result or merit list.
