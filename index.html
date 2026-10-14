@@ -237,7 +237,7 @@ function dateTime(){return new Date().toLocaleTimeString(undefined,{hour:"2-digi
 function subj(id){return subjects.find(function(s){return s.id===id})||subjects[0]}
 var builtInQuestionBanks=[];
 var builtInQuestionStatus="Loading source-keyed PRC practice questions…";
-var BUILTIN_BANK_URL="https://raw.githubusercontent.com/alvarophenoyosa/RK-CA-HUB/main/data/question-banks/all-prc-question-banks.json.gz.b64";
+var BUILTIN_BANK_URL=new URL("data/question-banks/all-prc-question-banks.json.gz.b64",document.baseURI).href;
 function unpackQuestionRows(data,expectedSubject,sourceText){
  if(!data||!Array.isArray(data.questions))throw new Error("Question bank rows are invalid for "+expectedSubject);
  var out=[];
@@ -389,7 +389,7 @@ function renderMock(){
  '<div class="grid two"><section class="panel"><div class="panel-head"><div><div class="eyebrow">CONFIGURE SESSION</div><h2 style="margin-top:6px;font-size:19px">Build your mock</h2><div class="small muted" style="margin-top:5px">Select subject, topic and exam time. Questions appear one at a time.</div></div><span class="tag">EXAM MODE</span></div>'+
  '<div class="form-grid"><div class="field full"><label for="mockSubject">SUBJECT</label><select id="mockSubject">'+subjectOptions(selected)+'</select></div><div class="field full"><label for="mockChapter">CHAPTER / TOPIC</label><select id="mockChapter"><option value="all">All available topics</option></select></div><div class="field"><label for="mockCount">QUESTION COUNT</label><select id="mockCount"><option value="30">30 MCQs</option><option value="50">50 MCQs</option></select></div><div class="field"><label for="mockMinutes">TIMER (MINUTES)</label><input id="mockMinutes" type="number" min="1" max="240" value="'+esc(state.settings.timerMinutes||45)+'"></div></div>'+
  '<div id="poolInfo" class="tool-result"><b style="color:var(--cyan)">'+total+' question(s) available</b><div class="small muted" style="margin-top:4px">Only source-keyed bank items are used. Extracted questions are mapped to the printed answer key. Worked explanations are included only where the source provides them.</div></div>'+
- '<div class="actions"><button class="btn primary" data-action="start-quiz" '+(total?"":"disabled")+' >Start exam session →</button><button class="btn ghost" data-action="reload-question-bank">↻ Reload question bank</button><button class="btn ghost" data-action="import-question-bank">Import question bank JSON</button></div></section>'+
+ '<div class="actions"><button class="btn primary" data-action="start-quiz">Start exam session →</button><button class="btn ghost" data-action="reload-question-bank">↻ Reload question bank</button><button class="btn ghost" data-action="import-question-bank">Import question bank JSON</button></div></section>'+
  '<section class="panel"><div class="panel-head"><div><h2>Test performance</h2><div class="small muted" style="margin-top:4px">Completed mock attempts are saved in this browser. Mistake-review sessions are excluded from mock averages.</div></div><span class="tag green">LIVE</span></div><div class="progress-row"><div class="progress-ring" style="--p:'+tests.avg+'%"><strong>'+tests.avg+'%</strong></div><div class="progress-details"><h3>'+tests.n+' completed mock(s)</h3><p class="small muted">Average score across all attempts</p><div class="bar" style="margin:12px 0 8px"><span style="width:'+tests.passRate+'%"></span></div><div class="small muted">'+tests.passed+' passed using the 60% marker · '+(tests.n-tests.passed)+' need revision</div></div></div><div class="section-title"><div><h2>Mock rules</h2></div></div><div class="list-row"><div class="row-icon">01</div><div class="row-main"><strong>One question at a time</strong><small>Navigate by number or Next / Previous.</small></div></div><div class="list-row"><div class="row-icon">02</div><div class="row-main"><strong>Unique selection</strong><small>Questions are shuffled; no repeats within a single attempt.</small></div></div><div class="list-row"><div class="row-icon">03</div><div class="row-main"><strong>Automatic review log</strong><small>Wrong answers and explanations are kept in Mistakes Bank.</small></div></div></section></div>'+
  '<div class="section-title"><div><h2>Your question bank</h2><p>The built-in pack contains 1,886 answer-key-mapped questions across PRC 1, PRC 2 and PRC 3. First load requires an internet connection. Some extracted wording may need checking against the PDF; worked explanations are not included in most source items.</p></div></div>'+
  '<section class="panel"><div class="notice cyan">Expected JSON shape: <code>{"subject":"prc2-qa","questions":[{"chapter":"Topic title","question":"Question text","options":["A","B","C","D"],"answer":0,"explanation":"Why this is correct"}]}</code>. The answer value is a zero-based option index (0–3). Allowed subject IDs are shown below.</div><div class="grid three">'+subjects.map(function(s){return '<div class="file-card"><div class="row-icon">'+iconFor(s.id)+'</div><div class="row-main"><strong>'+esc(s.name)+'</strong><small><code>'+s.id+'</code> · '+questionsFor(s.id).length+' items available</small></div></div>'}).join("")+'</div><div class="actions"><button class="btn" data-action="reload-question-bank">↻ Reload built-in bank</button><button class="btn" data-action="import-question-bank">＋ Import JSON bank</button><button class="btn ghost" data-action="download-template">Download JSON template</button></div><input type="file" id="questionImportInput" accept=".json,application/json" class="hide"></section>'
@@ -399,15 +399,42 @@ function renderMock(){
 renderMock.selectedSubject="prc1-fa";
 function updateMockChapter(){var subjectSel=document.getElementById("mockSubject"),chapterSel=document.getElementById("mockChapter");if(!subjectSel||!chapterSel)return;var vals=questionsFor(subjectSel.value).map(function(q){return q.chapter||"Uncategorised"});var unique=Array.from(new Set(vals));chapterSel.innerHTML='<option value="all">All available topics</option>'+unique.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>'}).join("");var info=document.getElementById("poolInfo");if(info){var n=questionsFor(subjectSel.value).length;info.innerHTML='<b style="color:var(--cyan)">'+n+' question(s) available</b><div class="small muted" style="margin-top:4px">'+(n?"Built-in and imported verified items are available for this subject.":"No questions are currently available. Try reloading the built-in bank.")+'</div>'}}
 function startQuiz(){
- var s=document.getElementById("mockSubject").value;renderMock.selectedSubject=s;var chapter=document.getElementById("mockChapter").value;var count=Number(document.getElementById("mockCount").value)||30;var mins=Math.max(1,Math.min(240,Number(document.getElementById("mockMinutes").value)||45));
+ var subjectInput=document.getElementById("mockSubject");
+ if(!subjectInput){showPage("mock");return}
+ var s=subjectInput.value;renderMock.selectedSubject=s;
+ var chapterInput=document.getElementById("mockChapter");
+ var chapter=chapterInput?chapterInput.value:"all";
+ var count=Number((document.getElementById("mockCount")||{}).value)||30;
+ var mins=Math.max(1,Math.min(240,Number((document.getElementById("mockMinutes")||{}).value)||45));
  var pool=questionsFor(s).filter(function(q){return chapter==="all"||(q.chapter||"Uncategorised")===chapter});
- if(!pool.length){toast("No questions available for this selection. Reload the built-in bank or import a verified JSON bank.");return}
+ if(!pool.length){
+  if(/^Loading/i.test(builtInQuestionStatus)){
+   toast("Question bank is still loading. Please try again in a moment.");
+   return;
+  }
+  if(!builtInQuestionBanks.length){
+   toast("Question bank not loaded — retrying now…");
+   loadBuiltInQuestionBanks().then(function(q){
+    if(q.length){
+     renderMock.selectedSubject=s;
+     renderMock();
+     startQuiz();
+    }else toast(builtInQuestionStatus||"Question bank could not load. Check your connection and retry.");
+   });
+   return;
+  }
+  toast("No questions are available for this subject/topic. Choose another topic or reload the question bank.");
+  return;
+ }
  var attempts={};state.history.forEach(function(h){(h.questionIds||[]).forEach(function(id){attempts[id]=(attempts[id]||0)+1})});
  pool=pool.map(function(q){return Object.assign({},q,{_weight:Math.random()+(1/(1+(attempts[q.id]||0)))})}).sort(function(a,b){return b._weight-a._weight});
  var available=pool.slice(0,Math.min(count,pool.length));
  quiz={subject:s,chapter:chapter,questions:available,askedCount:count,index:0,answers:{},flagged:{},seconds:mins*60,startedAt:Date.now(),startedISO:new Date().toISOString()};
- state.settings.timerMinutes=mins;saveState();if(pool.length<count)toast("Only "+pool.length+" unique questions are available for this selection; this attempt will use that pool size.");showPage("mock");quiz=quiz;
- quizTicker=setInterval(function(){if(!quiz)return;quiz.seconds--;if(quiz.seconds<=0){quiz.seconds=0;clearInterval(quizTicker);quizTicker=null;finishQuiz(true)}else{var n=document.getElementById("quizTimer");if(n)n.textContent=duration(quiz.seconds);}},1000);renderQuiz();
+ state.settings.timerMinutes=mins;saveState();
+ if(pool.length<count)toast("Only "+pool.length+" unique questions are available for this selection; this attempt will use that pool size.");
+ showPage("mock");
+ quizTicker=setInterval(function(){if(!quiz)return;quiz.seconds--;if(quiz.seconds<=0){quiz.seconds=0;clearInterval(quizTicker);quizTicker=null;finishQuiz(true)}else{var n=document.getElementById("quizTimer");if(n)n.textContent=duration(quiz.seconds);}},1000);
+ renderQuiz();
 }
 function renderQuiz(){
  if(!quiz)return;var q=quiz.questions[quiz.index];if(!q){finishQuiz(false);return}
