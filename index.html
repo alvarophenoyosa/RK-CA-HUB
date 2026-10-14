@@ -98,6 +98,18 @@ body[data-theme="classic"] .toast{background:#fbf5e7;color:#2e2b24;border-color:
 
 .score-legend{display:flex;align-items:center;gap:10px;margin:-3px 0 13px;color:var(--muted);font-size:10px;font-weight:750}.score-scale{height:7px;width:160px;max-width:35vw;border-radius:99px;background:linear-gradient(90deg,#e5484d 0%,#f0ab2d 50%,#22a666 100%);box-shadow:0 0 0 1px rgba(120,120,120,.12)}
 body[data-theme="classic"] .score-legend{font-family:Georgia,"Times New Roman",serif}
+
+.study-ai-hero{overflow:hidden}
+.study-ai-transcript{display:flex;flex-direction:column;gap:10px;max-height:460px;overflow:auto;margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(127,145,170,.045)}
+.study-ai-empty{padding:18px 12px;text-align:center;color:var(--muted)}
+.study-ai-empty strong{display:block;color:var(--text);margin-bottom:7px}
+.study-ai-empty p{max-width:610px;margin:0 auto;line-height:1.65}
+.study-ai-message{padding:12px 14px;border-radius:12px;border:1px solid var(--border);max-width:94%;overflow-wrap:anywhere}
+.study-ai-message.from-user{align-self:flex-end;background:rgba(56,189,248,.09);border-color:rgba(56,189,248,.3)}
+.study-ai-message.from-agent{align-self:flex-start;background:var(--panel-2,rgba(127,145,170,.08))}
+.study-ai-speaker{font-size:10px;letter-spacing:.12em;font-weight:850;color:var(--muted);margin-bottom:7px}
+.study-ai-text{white-space:pre-wrap;line-height:1.65;overflow-wrap:anywhere}
+.study-ai-hero textarea{min-height:108px}
 </style>
 </head>
 <body>
@@ -172,6 +184,13 @@ var focusStart=0;
 var focusSeconds=0;
 var generatedResult=null;
 var activeStudyTab="library";
+var studyAIKey="";
+var studyAIDraft="";
+var studyAIMode="simple";
+var studyAIHistory=[];
+var studyAIChat=[];
+var studyAIError="";
+var studyAILoading=false;
 var activeHomeTab="overview";
 var memoryDB=null;
 function clone(o){return JSON.parse(JSON.stringify(o))}
@@ -472,16 +491,63 @@ function showResult(record,items,expired){
 }
 function renderStudy(){
  var tab=activeStudyTab;
- var tabs=[["library","Study library"],["topics","Topic tracker"],["mindmaps","Mind maps"],["formulas","Formula bank"],["tools","Calculators & tools"],["mistakes","Mistakes bank"]];
+ var tabs=[["library","Study library"],["ai","AI Study Buddy"],["topics","Topic tracker"],["mindmaps","Mind maps"],["formulas","Formula bank"],["tools","Calculators & tools"],["mistakes","Mistakes bank"]];
  var bar='<div class="pill-row" style="margin-bottom:16px">'+tabs.map(function(t){return '<button class="pill '+(tab===t[0]?"active":"")+'" data-action="study-tab" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div>';
  var body="";
  if(tab==="library")body=renderLibrary();
+ if(tab==="ai")body=renderStudyAI();
  if(tab==="topics")body=renderTopics();
  if(tab==="mindmaps")body=renderMindmaps();
  if(tab==="formulas")body=renderFormulas();
  if(tab==="tools")body=renderTools();
  if(tab==="mistakes")body=renderMistakes();
  pageShell(bar+body);
+}
+
+function renderStudyAI(){
+ var modeOptions=[["simple","Explain simply (with an analogy)"],["step","Break it down step by step"],["worked","Show a worked example"],["quiz","Teach me, then quiz me"],["exam","Explain in CA-PRC exam style"]];
+ var transcript=studyAIChat.length?studyAIChat.map(function(m){return '<div class="study-ai-message '+(m.role==="user"?"from-user":"from-agent")+'"><div class="study-ai-speaker">'+(m.role==="user"?"YOU":"RK STUDY AGENT")+'</div><div class="study-ai-text">'+esc(m.text)+'</div></div>'}).join(""):'<div class="study-ai-empty"><strong>What are you stuck on?</strong><p>Ask about an accounting entry, a quantitative calculation, an economics concept, a formula, or a question you got wrong. I will explain it in small steps and check your understanding.</p></div>';
+ return '<section class="panel study-ai-hero"><div class="eyebrow">PERSONAL TUTOR / PRC SUPPORT</div><h2 style="font-size:22px;margin:8px 0">AI Study Buddy</h2><p class="muted">Paste the part you do not understand. Get a simpler explanation, a worked example, or a mini-quiz tailored to PRC 1, PRC 2 and PRC 3.</p><div class="notice cyan" style="margin:12px 0"><b>One-time setup:</b> this GitHub Pages site has no private server, so you bring your own Gemini API key. It is held only in memory in this open tab and is not saved in site progress or the repository. Your question is sent to Google Gemini when you ask for an explanation.</div>'+
+ '<div class="form-grid"><div class="field full"><label for="studyAIKey">YOUR GEMINI API KEY</label><input id="studyAIKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your personal API key here" value="'+esc(studyAIKey)+'"><div class="small muted" style="margin-top:5px">Create a key in <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio ↗</a>. Use your own key only.</div></div></div>'+
+ '<div class="grid two" style="margin-top:12px"><div class="field"><label for="studyAIMode">HOW SHOULD I EXPLAIN IT?</label><select id="studyAIMode">'+modeOptions.map(function(o){return '<option value="'+o[0]+'" '+(studyAIMode===o[0]?"selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></div><div class="field"><label>SUBJECT SUPPORT</label><div class="tool-result" style="height:100%">PRC 1 · Accounting<br>PRC 2 · Quantitative Analysis<br>PRC 3 · Business & Economics</div></div></div>'+
+ '<div class="study-ai-transcript" id="studyAITranscript" aria-live="polite">'+transcript+(studyAILoading?'<div class="study-ai-message from-agent"><div class="study-ai-speaker">RK STUDY AGENT</div><div class="study-ai-text">Working through your question…</div></div>':"")+'</div>'+
+ (studyAIError?'<div class="notice red" style="margin:10px 0">'+esc(studyAIError)+'</div>':"")+
+ '<div class="field" style="margin-top:14px"><label for="studyAIQuestion">WHAT ARE YOU STRUGGLING WITH?</label><textarea id="studyAIQuestion" rows="4" maxlength="6000" placeholder="Example: I do not understand why depreciation is added back in operating cash flow. Please explain it from the basics…">'+esc(studyAIDraft)+'</textarea><div class="small muted" style="margin-top:5px">Tip: include the full question and your attempt. Avoid passwords, private personal details, or confidential information.</div></div>'+
+ '<div class="actions"><button class="btn primary" data-action="ask-study-ai" '+(studyAILoading?"disabled":"")+'>'+(studyAILoading?"Explaining…":"Explain this to me →")+'</button><button class="btn ghost" data-action="clear-study-ai" '+(studyAILoading?"disabled":"")+'>Clear chat</button></div>'+
+ '<p class="small muted" style="margin-top:10px">Accuracy note: AI can make mistakes. Check important calculations and syllabus-specific answers against your ICAP study text. API quota or charges depend on your Google account and selected model. For a production service with one shared key, a secure backend proxy is required.</p></section>';
+}
+function askStudyAI(){
+ var keyInput=document.getElementById("studyAIKey"),questionInput=document.getElementById("studyAIQuestion"),modeInput=document.getElementById("studyAIMode");
+ var key=String((keyInput&&keyInput.value)||studyAIKey||"").trim(),question=String((questionInput&&questionInput.value)||studyAIDraft||"").trim();
+ if(!key){toast("Paste your own Gemini API key first.");if(keyInput)keyInput.focus();return}
+ if(!question){toast("Write what you are struggling with first.");if(questionInput)questionInput.focus();return}
+ if(studyAILoading)return;
+ studyAIKey=key;studyAIDraft=question;studyAIMode=(modeInput&&modeInput.value)||studyAIMode;studyAIError="";studyAILoading=true;
+ studyAIChat.push({role:"user",text:question});
+ var modes={simple:"Explain simply, starting from the basics and use a relatable analogy.",step:"Break the answer into small numbered steps, explaining why each step is needed.",worked:"Teach the concept and then provide one complete worked example with calculations.",quiz:"First explain briefly, then ask me one short check-for-understanding question at the end.",exam:"Use CA-PRC exam style: concise definition, formula or rule, working, final answer and common mistake."};
+ studyAIHistory.push({role:"user",parts:[{text:"Explanation style: "+(modes[studyAIMode]||modes.simple)+"\nStudent question or struggle:\n"+question}]});
+ renderStudy();
+ var endpoint="https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+ var payload={system_instruction:{parts:[{text:"You are RK | CA - HUB personal tutor for a CA-PRC student. Help with PRC 1 Fundamentals of Accounting, PRC 2 Quantitative Analysis for Business, and PRC 3 Business and Economic Insights. Be kind, patient, and clear. Start from the student's current level, define jargon, show formulas and substitute numbers carefully, explain why each step works, and highlight common traps. If essential information is missing, ask a focused clarifying question. Do not invent ICAP citations or pretend to have seen a source the student has not provided. Distinguish assumptions from facts. Do not claim your answers are official ICAP solutions. Default to practical examples and short sections."}]},contents:studyAIHistory,generationConfig:{temperature:0.35,maxOutputTokens:1400}};
+ fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify(payload)})
+ .then(function(response){return response.json().then(function(data){if(!response.ok){var msg=data&&data.error&&data.error.message?data.error.message:"Request failed with HTTP "+response.status;throw new Error(msg)}return data})})
+ .then(function(data){
+  var candidate=((data.candidates||[])[0]||{}).content;
+  var textOut=candidate&&Array.isArray(candidate.parts)?candidate.parts.map(function(p){return p.text||""}).join("\n").trim():"";
+  if(!textOut)throw new Error("The AI returned no text. Try again or check your API key and model access.");
+  studyAIHistory.push({role:"model",parts:[{text:textOut}]});studyAIChat.push({role:"assistant",text:textOut});
+  while(studyAIHistory.length>20){studyAIHistory.splice(0,2);studyAIChat.splice(0,2)}
+  studyAIDraft="";studyAIError="";
+ })
+ .catch(function(err){
+  if(studyAIHistory.length&&studyAIHistory[studyAIHistory.length-1].role==="user")studyAIHistory.pop();
+  if(studyAIChat.length&&studyAIChat[studyAIChat.length-1].role==="user"&&studyAIChat[studyAIChat.length-1].text===question)studyAIChat.pop();
+  studyAIError="Could not get an explanation: "+String(err.message||err)+". Check the key, your network, and your Gemini API quota, then try again.";
+ })
+ .finally(function(){
+  studyAILoading=false;
+  if(currentPage==="study"&&activeStudyTab==="ai"){renderStudy();var transcript=document.getElementById("studyAITranscript");if(transcript)transcript.scrollTop=transcript.scrollHeight}
+ });
 }
 function renderLibrary(){
  var fileRows=state.importedFiles.length?state.importedFiles.map(function(f){return '<div class="file-card"><div class="row-icon">PDF</div><div class="row-main"><strong>'+esc(f.name)+'</strong><small>'+esc(f.sizeText||"Saved locally")+' · '+esc(f.type||"Study file")+'</small></div><button class="btn sm" data-action="open-file" data-id="'+esc(f.id)+'">Open local</button><button class="btn sm ghost" data-action="delete-file" data-id="'+esc(f.id)+'">Remove</button></div>'}).join(""):empty("No personal files imported","You do not need to import the catalogue PDFs to read them online. Use the hosted links below; this vault is optional for private local copies.","upload-pdf","Import personal PDF");
@@ -650,6 +716,8 @@ function handleAction(el){
  var act=el.dataset.action;if(!act)return;
  if(act==="go-home")showPage("home");if(act==="go-mock")showPage("mock");if(act==="go-study"){activeStudyTab="library";showPage("study")}if(act==="go-profile")showPage("profile");if(act==="go-mistakes"){activeStudyTab="mistakes";showPage("study")}
  if(act==="study-tab"){activeStudyTab=el.dataset.tab;renderStudy()}
+ if(act==="ask-study-ai"){askStudyAI();return}
+ if(act==="clear-study-ai"){if(studyAILoading){toast("Wait for the current explanation to finish.");return}studyAIHistory=[];studyAIChat=[];studyAIDraft="";studyAIError="";renderStudy();return}
  if(act==="start-quiz")startQuiz();
  if(act==="answer"&&quiz){var q=quiz.questions[quiz.index],ix=Number(el.dataset.index);if(q.multiSelect||Array.isArray(q.answer)){var arr=Array.isArray(quiz.answers[q.id])?quiz.answers[q.id].slice():[];var at=arr.indexOf(ix);if(at>=0)arr.splice(at,1);else arr.push(ix);if(arr.length)quiz.answers[q.id]=arr;else delete quiz.answers[q.id]}else quiz.answers[q.id]=ix;renderQuiz()}
  if(act==="prev-q"&&quiz&&quiz.index>0){quiz.index--;renderQuiz()}
@@ -688,7 +756,13 @@ function handleAction(el){
  if(act==="close-modal"){if(el.classList.contains("modal-backdrop")||el.closest(".modal"))closeModal()}
 }
 document.addEventListener("click",function(e){var el=e.target.closest("[data-action]");if(el){if(el.tagName==="INPUT"&&el.type==="checkbox"&&el.dataset.action==="toggle-topic"){handleAction(el);return}handleAction(el)}});
+document.addEventListener("input",function(e){
+ if(e.target.id==="studyAIKey")studyAIKey=e.target.value;
+ if(e.target.id==="studyAIQuestion")studyAIDraft=e.target.value;
+});
 document.addEventListener("change",function(e){
+ if(e.target.id==="studyAIKey")studyAIKey=e.target.value;
+ if(e.target.id==="studyAIMode")studyAIMode=e.target.value;
  if(e.target.id==="themeSelector")applyTheme(e.target.value,true);
  if(e.target.id==="mockSubject"){renderMock.selectedSubject=e.target.value;updateMockChapter()}
  if(e.target.id==="mindmapSubject"){renderMindmaps.subject=e.target.value;renderStudy()}
