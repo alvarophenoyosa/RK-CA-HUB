@@ -31,7 +31,7 @@ Download `index.html` and open it in a modern browser. For more reliable local P
 - Four themes and score-dependent red → amber → green colours.
 
 ## PRC course PDF catalogue status
-The Study catalogue links the eight PDFs present in the repository:
+The Study catalogue lists these eight course PDFs, grouped by official subject and volume:
 - **PRC 1 — Fundamentals of Accounting:** Study Text and Question Bank
 - **PRC 2 — Quantitative Analysis for Business:** Study Text and Question Bank
 - **PRC 3, Volume 1 — Business Insights:** Study Text and MCQs
@@ -40,7 +40,7 @@ The Study catalogue links the eight PDFs present in the repository:
 According to ICAP's 2025 syllabus, the website now uses the three official PRC subjects: **PRC 1 — Fundamentals of Accounting**, **PRC 2 — Quantitative Analysis for Business**, and **PRC 3 — Business and Economic Insights**. PRC 2 covers Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values. PRC 3's Business Insights and Economics books remain separate catalogue volumes, but share progress and mock tracking under one subject.
 
 ## PDF and privacy behaviour
-The catalogue opens hosted PDFs in a new tab. Since these files currently live in a **public** repository, anyone can access them from GitHub or from the website. Confirm that your permission covers public online redistribution before keeping original ICAP PDFs here. If not, remove the PDF files from the public repo; the site's optional **Study → My personal study vault → Import personal PDFs** stores a user's local copies in browser IndexedDB on that device and does not send them to GitHub.
+The Study catalogue currently opens only a user's local imported copy; it does not serve official PDFs as public downloads. The original PDFs are nevertheless still committed in this **public** repository's root, so anyone may be able to access them directly through GitHub. Confirm that your permission covers public online redistribution. If your permission is personal-study only, remove the PDF files from this public repo. The optional **Study → My personal study vault → Import personal PDFs** feature stores local copies in browser IndexedDB on that device and does not send them to GitHub.
 
 Profile, topic checklist, mock history, mistakes and study sessions are stored in browser local storage. They do not sync between devices or users. Export a JSON backup periodically. Clearing site data may remove this information.
 
