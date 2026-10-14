@@ -381,7 +381,7 @@ function openMistake(id){
  var m=state.mistakes.find(function(x){return x.questionId===id});if(!m){toast("That mistake no longer exists.");return}
  var source=allQuestions().find(function(q){return q.id===id});
  if(!source){source={id:m.questionId,subject:m.subject,chapter:m.chapter,question:m.question,options:m.options||[],answer:m.correctIndex,explanation:m.explanation}}
- quiz={subject:m.subject,chapter:m.chapter,questions:[source],askedCount:1,answers:{},flagged:{},seconds:60*10,startedAt:Date.now(),startedISO:new Date().toISOString(),demo:!!m.sourceDemo,reviewMistake:true};showPage("mock");clearInterval(quizTicker);quizTicker=setInterval(function(){if(!quiz)return;quiz.seconds--;var n=document.getElementById("quizTimer");if(n)n.textContent=duration(quiz.seconds);if(quiz.seconds<=0){clearInterval(quizTicker);quizTicker=null;toast("Review timer ended — submit to finish.");}},1000);renderQuiz();
+ quiz={subject:m.subject,chapter:m.chapter,questions:[source],askedCount:1,answers:{},flagged:{},seconds:60*10,startedAt:Date.now(),startedISO:new Date().toISOString(),reviewMistake:true};showPage("mock");clearInterval(quizTicker);quizTicker=setInterval(function(){if(!quiz)return;quiz.seconds--;var n=document.getElementById("quizTimer");if(n)n.textContent=duration(quiz.seconds);if(quiz.seconds<=0){clearInterval(quizTicker);quizTicker=null;toast("Review timer ended — submit to finish.");}},1000);renderQuiz();
 }
 function uploadPdf(){var input=document.getElementById("pdfInput");if(input)input.click();else{activeStudyTab="library";renderStudy();setTimeout(function(){var n=document.getElementById("pdfInput");if(n)n.click()},0)}}
 function dbOpen(){
