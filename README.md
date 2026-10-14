@@ -5,7 +5,7 @@ A responsive personal study dashboard for CA-PRC preparation. The app is current
 ## Publish with GitHub Pages
 1. Open this repository's **Settings → Pages**.
 2. Under **Build and deployment → Source**, choose **GitHub Actions**.
-3. Open the **Actions** tab and check the **Deploy to GitHub Pages** workflow. The workflow runs on pushes to `main), and can also be started manually.
+3. Open the **Actions** tab and check the **Deploy to GitHub Pages** workflow. The workflow runs on pushes to `main`, and can also be started manually.
 4. Once the workflow succeeds, open the published URL shown under **Settings → Pages** or in the workflow deployment summary.
 
 ## Run locally
