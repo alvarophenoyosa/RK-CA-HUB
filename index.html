@@ -221,25 +221,20 @@ function dateTime(){return new Date().toLocaleTimeString(undefined,{hour:"2-digi
 function subj(id){return subjects.find(function(s){return s.id===id})||subjects[0]}
 var builtInQuestionBanks=[];
 var builtInQuestionStatus="Loading source-keyed PRC practice questions…";
-var BUILTIN_BANK_FILES=[
- {subject:"prc1-fa",path:"prc1-fa.json.gz.b64"},
- {subject:"prc2-qa",path:"prc2-qa.json.gz.b64"},
- {subject:"prc3-bei",path:"prc3-bei.json.gz.b64"}
-];
-function unpackQuestionRows(data,expectedSubject){
- if(!data||data.subject!==expectedSubject||!Array.isArray(data.questions))throw new Error("Question bank metadata is invalid for "+expectedSubject);
+var BUILTIN_BANK_URL="https://raw.githubusercontent.com/alvarophenoyosa/RK-CA-HUB/main/data/question-banks/all-prc-question-banks.json.gz.b64";
+function unpackQuestionRows(data,expectedSubject,sourceText){
+ if(!data||!Array.isArray(data.questions))throw new Error("Question bank rows are invalid for "+expectedSubject);
  var out=[];
  function validAnswer(answer,options){
   if(Array.isArray(answer))return answer.length>0&&answer.every(function(n){return Number.isInteger(Number(n))&&Number(n)>=0&&Number(n)<options.length});
   return Number.isInteger(Number(answer))&&Number(answer)>=0&&Number(answer)<options.length;
  }
  function addQuestion(q){
-  if(!q||!q.question||!Array.isArray(q.options)||q.options.length<2||!validAnswer(q.answer,q.options))return;
-  var answer=Array.isArray(q.answer)?q.answer.map(Number):Number(q.answer);
-  var multi=!!q.multiSelect||Array.isArray(answer);
+  if(!q||!String(q.question||"").trim()||!Array.isArray(q.options)||q.options.length<2||!validAnswer(q.answer,q.options))return;
+  var answer=Array.isArray(q.answer)?q.answer.map(Number):Number(q.answer),multi=!!q.multiSelect||Array.isArray(answer);
   if(multi&&!Array.isArray(answer))answer=[answer];
   if(!multi&&Array.isArray(answer))answer=answer[0];
-  out.push({id:String(q.id),subject:expectedSubject,chapter:String(q.chapter||"Uncategorised"),question:String(q.question).trim(),options:q.options.map(function(x){return String(x)}),answer:answer,multiSelect:multi,explanation:String(q.explanation||""),source:String(q.source||"ICAP PRC question bank")});
+  out.push({id:String(q.id),subject:expectedSubject,chapter:String(q.chapter||"Uncategorised"),question:String(q.question).trim(),options:q.options.map(function(x){return String(x)}),answer:answer,multiSelect:multi,explanation:String(q.explanation||""),source:String(q.source||sourceText||"ICAP PRC question bank")});
  }
  data.questions.forEach(function(row,i){
   if(!Array.isArray(row)){addQuestion(Object.assign({},row,{id:row.id||("builtin-"+expectedSubject+"-q"+(i+1))}));return;}
@@ -250,34 +245,40 @@ function unpackQuestionRows(data,expectedSubject){
   }else if(row.length>=7&&Array.isArray(row[5])&&typeof row[4]==="string"){
    volume=Number(row[0])||0;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;chapter=String(row[3]||"Chapter "+chapterNo);question=String(row[4]||"");options=row[5];answer=row[6];multi=Array.isArray(answer);
   }else if(row.length>=7&&Array.isArray(row[4])){
-   volume=Number(row[0])||1;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;question=String(row[3]||"");options=row[4];answer=row[5];multi=!!row[6];
+   volume=Number(row[0])||1;chapterNo=Number(row[1])||1;questionNo=Number(row[2])||i+1;question=String(row[3]||"");options=row[4];answer=row[5];multi=!!row[6]||Array.isArray(answer);
    var map=(data.chapters||{})[String(volume)]||[];chapter="Volume "+volume+" · "+String(map[chapterNo-1]||("Chapter "+chapterNo));
   }else return;
   if(!Array.isArray(options))return;
   var id="builtin-"+expectedSubject+"-v"+volume+"-ch"+chapterNo+"-q"+questionNo;
-  addQuestion({id:id,subject:expectedSubject,chapter:chapter,question:question,options:options,answer:answer,multiSelect:multi,explanation:"",source:data.source||"ICAP PRC question bank"});
+  addQuestion({id:id,subject:expectedSubject,chapter:chapter,question:question,options:options,answer:answer,multiSelect:multi,source:sourceText||data.source||"ICAP PRC question bank"});
  });
  if(!out.length)throw new Error("No valid questions in the "+expectedSubject+" bank.");
  return out;
 }
-function fetchBuiltinBank(item){
- var url="https://raw.githubusercontent.com/alvarophenoyosa/RK-CA-HUB/main/data/question-banks/"+item.path;
- return fetch(url,{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status+" for "+item.subject);return r.text()}).then(function(encoded){
+function fetchBuiltInPack(){
+ return fetch(BUILTIN_BANK_URL,{cache:"no-cache"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status+" loading question bank");return r.text()}).then(function(encoded){
   if(typeof DecompressionStream!=="function")throw new Error("This browser does not support compressed question-bank loading.");
   var raw=atob(encoded.trim()),bytes=new Uint8Array(raw.length);
   for(var i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
   var stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
   return new Response(stream).json();
- }).then(function(data){return {subject:item.subject,questions:unpackQuestionRows(data,item.subject)}});
+ });
 }
 function loadBuiltInQuestionBanks(){
- builtInQuestionStatus="Loading source-keyed practice questions…";
- return Promise.all(BUILTIN_BANK_FILES.map(function(item){return fetchBuiltinBank(item)})).then(function(banks){
-  var loaded=[];banks.forEach(function(bank){loaded=loaded.concat(bank.questions)});
+ builtInQuestionStatus="Loading answer-key-mapped practice questions…";
+ return fetchBuiltInPack().then(function(pack){
+  if(!pack||!pack.banks)throw new Error("The combined question bank has an invalid structure.");
+  var loaded=[],counts=[];
+  subjects.forEach(function(subject){
+   var data=pack.banks[subject.id];if(!data)throw new Error("Missing "+subject.id+" bank in the combined pack.");
+   var questions=unpackQuestionRows(data,subject.id,pack.source);
+   counts.push(subject.short+": "+questions.length);
+   loaded=loaded.concat(questions);
+  });
   var other=(state.questionBanks||[]).filter(function(q){return !String(q.id||"").startsWith("builtin-")});
   state.questionBanks=other.concat(loaded);
   builtInQuestionBanks=loaded;
-  builtInQuestionStatus="Loaded "+loaded.length+" source-keyed practice questions across all 3 PRC subjects. Explanations are shown only when present in the source data.";
+  builtInQuestionStatus="Loaded "+loaded.length+" answer-key-mapped practice questions ("+counts.join(", ")+"). Some extracted wording may need comparison with the PDF; worked explanations are not included in most source items.";
   saveState();
   if(currentPage==="mock"&&!quiz)renderMock();
   return loaded;
@@ -288,10 +289,6 @@ function loadBuiltInQuestionBanks(){
  });
 }
 
-function answerIsValid(answer,options){
- if(Array.isArray(answer))return answer.length>0&&answer.every(function(n){return Number.isInteger(Number(n))&&Number(n)>=0&&Number(n)<options.length});
- return Number.isInteger(Number(answer))&&Number(answer)>=0&&Number(answer)<options.length;
-}
 function questionPool(){return (state.questionBanks||[]).filter(function(q){return q&&q.question&&Array.isArray(q.options)&&q.options.length>=2&&answerIsValid(q.answer,q.options)})}
 function answerIndexes(answer){return (Array.isArray(answer)?answer:[answer]).map(Number).filter(Number.isInteger).sort(function(a,b){return a-b})}
 function answersEqual(picked,correct){
