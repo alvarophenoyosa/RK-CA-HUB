@@ -1,6 +1,6 @@
 # RK | CA - HUB
 
-A responsive CA-PRC personal study dashboard with a neon cyber interface, selectable themes, mock exams, subject progress, study utilities, and a local PDF vault. It is a **single-file HTML MVP** with no package install or build step.
+A responsive CA-PRC personal study dashboard with a neon cyber interface, selectable themes, mock exams, subject progress, study utilities, and a local PDF vault. It is a **single-file HTML MVP** with no package install or build step. The repository is public, so do not commit original ICAP PDFs unless written terms explicitly permit redistribution.
 
 ## Themes
 - **Neon Grid** — original dark cyber grid.
@@ -52,4 +52,4 @@ Subject IDs:
 - `prc3-bi` — Business Insights
 - `prc3-eco` — Economics
 
-The small built-in MCQ pool is explicitly labelled **illustrative demo content**, not official ICAP questions. Use the Mock page's JSON template and importer to add your own source-backed practice items. The Merit page produces a personal study report, not an official ICAP result or merit list.
+**No MCQs are bundled with the site.** Placeholder/sample questions have been removed; the mock launcher remains disabled until a question bank is imported as JSON, so mock scores will only be based on imported items. Use the Mock page JSON template and importer to add source-backed practice items. The Merit page produces a personal study report, not an official ICAP result or merit list.
