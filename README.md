@@ -37,7 +37,7 @@ The Study catalogue links the eight PDFs present in the repository:
 - **PRC 3, Volume 1 — Business Insights:** Study Text and MCQs
 - **PRC 3, Volume 2 — Economics:** Study Text and MCQs
 
-According to ICAP's 2025 syllabus, PRC 2 is one subject containing Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values. It is no longer split into separate QM and FM subjects in the website's progress and mock selectors.
+According to ICAP's 2025 syllabus, the website now uses the three official PRC subjects: **PRC 1 — Fundamentals of Accounting**, **PRC 2 — Quantitative Analysis for Business**, and **PRC 3 — Business and Economic Insights**. PRC 2 covers Basic Mathematics, Financial Mathematics, Application of Statistics in Business, and Probability and Expected Values. PRC 3's Business Insights and Economics books remain separate catalogue volumes, but share progress and mock tracking under one subject.
 
 ## PDF and privacy behaviour
 The catalogue opens hosted PDFs in a new tab. Since these files currently live in a **public** repository, anyone can access them from GitHub or from the website. Confirm that your permission covers public online redistribution before keeping original ICAP PDFs here. If not, remove the PDF files from the public repo; the site's optional **Study → My personal study vault → Import personal PDFs** stores a user's local copies in browser IndexedDB on that device and does not send them to GitHub.
@@ -48,9 +48,8 @@ Profile, topic checklist, mock history, mistakes and study sessions are stored i
 Subject IDs:
 - `prc1-fa` — Financial Accounting
 - `prc2-qa` — Quantitative Analysis for Business
-- `prc3-bi` — Business Insights
-- `prc3-eco` — Economics
+- `prc3-bei` — Business and Economic Insights (both volumes)
 
-Legacy progress and imported question data using `prc2-qm` or `prc2-fm` are normalised to `prc2-qa` when the site loads.
+Legacy progress and imported question data using `prc2-qm` or `prc2-fm` are normalised to `prc2-qa`; old `prc3-bi` and `prc3-eco` items are normalised to `prc3-bei` when the site loads.
 
 **No MCQs are bundled with the site.** Placeholder/sample questions have been removed; the mock launcher remains disabled until a question bank is imported as JSON, so mock scores will only be based on imported items. Use the Mock page JSON template and importer to add source-backed practice items. The Merit page produces a personal study report, not an official ICAP result or merit list.
