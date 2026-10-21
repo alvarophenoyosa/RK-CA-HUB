@@ -15,6 +15,36 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}button:focus-vis
 @media(max-width:520px){.topbar{align-items:flex-start}.page-title{font-size:23px}.top-actions{gap:5px}.profile-chip{padding:6px 8px}.profile-chip #headerName{display:none}.grid.four,.grid.three{grid-template-columns:1fr 1fr;gap:9px}.metric{padding:13px}.metric-value{font-size:24px}.metric-label{min-height:28px}.panel{padding:16px;border-radius:15px}.hero h2{font-size:26px}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.progress-row{gap:15px;align-items:flex-start}.progress-ring{width:88px;height:88px}.progress-ring strong{font-size:19px}.subject-line{grid-template-columns:minmax(110px,1.2fr) 1fr auto;gap:7px}.subject-line .name{font-size:10px}.subject-line .count{font-size:9px}.grid.two{grid-template-columns:1fr}.section-title{margin-top:22px}.quiz-side{grid-template-columns:1fr 1fr}.data-table th,.data-table td{padding:9px}.profile-chip .avatar{width:25px;height:25px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
+
+/* RK motion system — polished, low-distraction study energy */
+:root{--motion-fast:160ms;--motion-mid:260ms;--motion-slow:520ms}
+html{scroll-padding-top:18px}
+body{isolation:isolate}
+body:after{animation:rk-ambient-drift 24s ease-in-out infinite alternate}
+@keyframes rk-ambient-drift{0%{transform:translate3d(-3%,0,0) scale(.92);opacity:.7}100%{transform:translate3d(7%,7%,0) scale(1.08);opacity:1}}
+.app{animation:rk-page-in 420ms cubic-bezier(.2,.7,.2,1) both}
+@keyframes rk-page-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.panel,.mini-card,.stat-card,.metric-card,.subject-card,.question-card,.result-card,.profile-card,.resource-card,.mock-card,.formula-card{transition:transform var(--motion-mid) cubic-bezier(.2,.7,.2,1),border-color var(--motion-mid),box-shadow var(--motion-mid),background-color var(--motion-mid)}
+.panel:hover,.stat-card:hover,.metric-card:hover,.subject-card:hover,.resource-card:hover,.mock-card:hover,.formula-card:hover{border-color:color-mix(in srgb,var(--cyan) 35%,var(--line));box-shadow:0 14px 34px rgba(0,0,0,.16)}
+button,.btn,.nav button,.theme-picker select{transition:transform var(--motion-fast) ease,filter var(--motion-fast) ease,background-color var(--motion-mid) ease,border-color var(--motion-mid) ease,box-shadow var(--motion-mid) ease}
+button:hover,.btn:hover{filter:brightness(1.07)}
+button:active,.btn:active{transform:translateY(1px) scale(.985)}
+.nav button:hover{transform:translateX(3px)}
+.nav button.active{animation:rk-nav-glow 3.8s ease-in-out infinite}
+@keyframes rk-nav-glow{0%,100%{box-shadow:inset 3px 0 var(--cyan),0 0 0 rgba(71,231,242,0)}50%{box-shadow:inset 3px 0 var(--cyan),0 0 18px rgba(71,231,242,.08)}}
+input,select,textarea{transition:border-color var(--motion-mid),box-shadow var(--motion-mid),background-color var(--motion-mid)}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--cyan) 12%,transparent)}
+.progress-fill,.progress-bar,.bar-fill{transition:width 700ms cubic-bezier(.2,.7,.2,1)}
+.progress-ring{transition:filter var(--motion-mid),transform var(--motion-mid)}
+.progress-ring:hover{transform:scale(1.035);filter:drop-shadow(0 0 10px color-mix(in srgb,var(--cyan) 22%,transparent))}
+.toast{animation:rk-toast-in 240ms cubic-bezier(.2,.7,.2,1) both}
+@keyframes rk-toast-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes rk-soft-pulse{0%,100%{opacity:1}50%{opacity:.78}}
+.eyebrow{transition:color var(--motion-mid)}
+.panel:hover .eyebrow{color:var(--cyan)}
+/* Keep study reading calm: motion only when useful, never while reading text */
+@media(prefers-reduced-motion:reduce){body:after,.app,.nav button.active,.toast{animation:none!important}.panel,.mini-card,.stat-card,.metric-card,.subject-card,.question-card,.result-card,.profile-card,.resource-card,.mock-card,.formula-card,button,.btn,.nav button,input,select,textarea,.progress-fill,.progress-bar,.bar-fill,.progress-ring{transition:none!important}}
+
 /* Theme chooser, colour-coded scores and per-subject progress */
 body[data-theme="cyber"]{--bg:#080c18;--panel:#10172a;--panel2:#0c1222;--line:rgba(145,170,220,.16);--text:#edf4ff;--muted:#8f9db9;--cyan:#47e7f2;--blue:#7786ff;--pink:#ff54bc;--green:#63efb5;--amber:#ffc66d;--danger:#ff718a;--progress-start:#47e7f2;--progress-end:#7786ff;--ring-track:rgba(130,150,190,.12);--control-bg:#0a1020;--shadow:0 18px 50px rgba(0,0,0,.24)}
 
