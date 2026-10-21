@@ -110,6 +110,8 @@ body[data-theme="classic"] .score-legend{font-family:Georgia,"Times New Roman",s
 .study-ai-speaker{font-size:10px;letter-spacing:.12em;font-weight:850;color:var(--muted);margin-bottom:7px}
 .study-ai-text{white-space:pre-wrap;line-height:1.65;overflow-wrap:anywhere}
 .study-ai-hero textarea{min-height:108px}
+
+.speedrun-launch{margin:0 0 16px;border-color:rgba(99,239,181,.32);background:linear-gradient(125deg,rgba(17,45,49,.82),rgba(15,23,43,.96));animation:enter .42s ease both}.speedrun-screen{animation:enter .22s ease both}.speed-clock{display:grid;gap:3px;text-align:right;justify-items:end}.speed-clock strong{font-size:24px;font-variant-numeric:tabular-nums;color:var(--cyan)}.speed-question{font-size:clamp(19px,2.5vw,27px);line-height:1.45;margin:24px 0}.speed-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.speed-option{display:flex;align-items:center;gap:13px;text-align:left;min-height:86px;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--control-bg);color:var(--text);font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.speed-option:not(:disabled):hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 10px 28px rgba(71,231,242,.12)}.speed-option .letter{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:rgba(119,134,255,.14);color:var(--cyan);font-weight:900}.speed-option.right{border-color:var(--green);background:rgba(99,239,181,.14);box-shadow:0 0 0 1px rgba(99,239,181,.2)}.speed-option.wrong{border-color:var(--danger);background:rgba(255,113,138,.13);animation:wrongShake .28s ease}.speed-feedback{margin-top:18px;padding:18px;border-radius:16px;animation:enter .24s ease both}.speed-feedback.good{border:1px solid rgba(99,239,181,.4);background:rgba(99,239,181,.09)}.speed-feedback.bad{border:1px solid rgba(255,113,138,.4);background:rgba(255,113,138,.08)}.speed-feedback p{line-height:1.7}.speed-feedback.good b{color:var(--green)}.speed-feedback.bad b{color:var(--danger)}@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@media(max-width:680px){.speed-options{grid-template-columns:1fr}.speed-option{min-height:72px}.speed-clock strong{font-size:19px}}
 </style>
 </head>
 <body>
@@ -182,6 +184,8 @@ var quizTicker=null;
 var focusTicker=null;
 var focusStart=0;
 var focusSeconds=0;
+var speedRun=null;
+var speedRunTicker=null;
 var generatedResult=null;
 var activeStudyTab="library";
 var studyAIKey="";
@@ -379,7 +383,7 @@ function applyTheme(theme,persist){
  if(persist){state.settings.theme=theme;saveState();toast("Theme changed to "+({cyber:"Neon Grid",jet:"Jet Black Neon",white:"Clean White",classic:"Old-School Classic"}[theme])+".")}
 }
 function showPage(page){currentPage=page;document.querySelectorAll("[data-page]").forEach(function(b){b.classList.toggle("active",b.dataset.page===page)});var meta={home:["STUDENT WORKSPACE / OVERVIEW","Your command center"],mock:["PRACTICE LAB / EXAM MODE","Mock exam simulator"],study:["LEARNING VAULT / RESOURCES","Study workspace"],profile:["STUDENT CENTRE / PERSONAL","Your CA profile"],merit:["PERFORMANCE / LIVE REPORT","Merit & performance"]};document.getElementById("crumb").textContent=meta[page][0];document.getElementById("pageTitle").textContent=meta[page][1];renderPage();window.scrollTo({top:0,behavior:"smooth"})}
-function updateHeader(){var name=state.profile.name||"Student";var selector=document.getElementById("themeSelector");if(selector&&selector.value!==(state.settings.theme||"cyber"))selector.value=state.settings.theme||"cyber";document.getElementById("headerName").textContent=name;document.getElementById("headerAvatar").textContent=name.trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||""}).join("").toUpperCase()||"ST";var s=document.getElementById("clock");if(s)s.textContent=dateTime();var side=document.getElementById("sideFocusTime");if(side)side.textContent=duration(focusSeconds);var sb=document.getElementById("sideFocusButton");if(sb)sb.textContent=focusTicker?"Pause":"Start"}
+function updateHeader(){var name=state.profile.name||"Student";var selector=document.getElementById("themeSelector");if(selector&&selector.value!==(state.settings.theme||"cyber"))selector.value=state.settings.theme||"cyber";document.getElementById("headerName").textContent=name;document.getElementById("headerAvatar").textContent=name.trim().split(/\s+/).slice(0,2).map(function(x){return x[0]||""}).join("").toUpperCase()||"ST";var s=document.getElementById("clock");if(s)s.textContent=dateTime();var side=document.getElementById("sideFocusTime");if(side)side.textContent=duration(focusStored()&&focusStored().running?focusElapsed():focusSeconds);var sb=document.getElementById("sideFocusButton");if(sb)sb.textContent=(focusStored()&&focusStored().running)?"Pause":"Start"}
 function toast(msg){var root=document.getElementById("toastRoot");root.innerHTML='<div class="toast" role="status">'+esc(msg)+'</div>';clearTimeout(toast._timer);toast._timer=setTimeout(function(){root.innerHTML=""},3200)}
 function iconFor(s){return {"prc1-fa":"◫","prc2-qa":"∑","prc2-qa":"↗","prc3-bei":"◈","prc3-bei":"⌁"}[s]||"✦"}
 function subjectOptions(selected){return subjects.map(function(s){return '<option value="'+s.id+'" '+(s.id===selected?"selected":"")+'>'+esc(s.prc+" — "+s.name)+'</option>'}).join("")}
@@ -409,12 +413,15 @@ function renderHome(){
  );
 }
 function renderMock(){
- if(quiz){renderQuiz();return}
+ if(speedRun){renderSpeedRun();return}\n if(quiz){renderQuiz();return}
  var selected=(renderMock.selectedSubject||"prc1-fa");
  var total=questionsFor(selected).length;
  var tests=testStats();
  pageShell(
  '<div class="notice '+(total?"cyan":"red")+'"><b>Question bank status:</b> '+(total?"Source-keyed questions available: "+total+" for this subject. "+builtInQuestionStatus:builtInQuestionStatus)+'</div>'+
+ '<section class="panel speedrun-launch"><div class="panel-head"><div><div class="eyebrow">⚡ INSTANT FEEDBACK MODE</div><h2 style="margin-top:6px;font-size:20px">Speed Run</h2><div class="small muted" style="margin-top:5px">Chapter-range sprint • 2 marks per MCQ • instant red/green feedback • resume any time</div></div><span class="tag green">LIVE LEARNING</span></div>'+
+ '<div class="form-grid"><div class="field"><label for="speedSubject">SUBJECT</label><select id="speedSubject">'+subjectOptions(selected)+'</select></div><div class="field"><label for="speedCount">MCQ COUNT</label><select id="speedCount"><option value="50">50 MCQs</option><option value="75">75 MCQs</option><option value="100">100 MCQs</option></select></div><div class="field"><label for="speedFrom">FROM CHAPTER</label><select id="speedFrom"></select></div><div class="field"><label for="speedTo">TO CHAPTER</label><select id="speedTo"></select></div></div><div id="speedInfo" class="tool-result">Choose a subject and chapter range to build your sprint.</div><div class="actions"><button class="btn primary" data-action="start-speedrun">⚡ Start Speed Run</button><button class="btn ghost" data-action="resume-speedrun">Resume saved run</button></div></section>'+
+
  '<div class="grid two"><section class="panel"><div class="panel-head"><div><div class="eyebrow">CONFIGURE SESSION</div><h2 style="margin-top:6px;font-size:19px">Build your mock</h2><div class="small muted" style="margin-top:5px">Select subject, topic and exam time. Questions appear one at a time.</div></div><span class="tag">EXAM MODE</span></div>'+
  '<div class="form-grid"><div class="field full"><label for="mockSubject">SUBJECT</label><select id="mockSubject">'+subjectOptions(selected)+'</select></div><div class="field full"><label for="mockChapter">CHAPTER / TOPIC</label><select id="mockChapter"><option value="all">All available topics</option></select></div><div class="field"><label for="mockCount">QUESTION COUNT</label><select id="mockCount"><option value="30">30 MCQs</option><option value="50">50 MCQs</option></select></div><div class="field"><label for="mockMinutes">TIMER (MINUTES)</label><input id="mockMinutes" type="number" min="1" max="240" value="'+esc(state.settings.timerMinutes||45)+'"></div></div>'+
  '<div id="poolInfo" class="tool-result"><b style="color:var(--cyan)">'+total+' question(s) available</b><div class="small muted" style="margin-top:4px">Only source-keyed bank items are used. Extracted questions are mapped to the printed answer key. Worked explanations are included only where the source provides them.</div></div>'+
@@ -466,6 +473,7 @@ function startQuiz(){
  renderQuiz();
 }
 function renderQuiz(){
+ if(speedRun){renderSpeedRun();return}
  if(!quiz)return;var q=quiz.questions[quiz.index];if(!q){finishQuiz(false);return}
  var answered=Object.keys(quiz.answers).filter(function(id){var a=quiz.answers[id];return Array.isArray(a)?a.length>0:a!==undefined}).length;
  var multi=!!q.multiSelect||Array.isArray(q.answer),picked=quiz.answers[q.id];
@@ -632,9 +640,12 @@ function generateResult(){
  generatedResult='<section class="panel" id="liveReport"><div class="panel-head"><div><div class="eyebrow">GENERATED LIVE RESULT</div><h2 style="font-size:20px;margin-top:5px">'+esc(state.profile.name||"Student")+' · Study report</h2><div class="small muted" style="margin-top:5px">Generated '+esc(now.toLocaleString())+'</div></div><span class="tag green">PERSONAL REPORT</span></div><div class="grid three"><div class="metric"><div class="metric-label">TOTAL STUDY TIME</div><div class="metric-value">'+hoursText(seconds)+'</div></div><div class="metric"><div class="metric-label">TOPIC COVERAGE</div><div class="metric-value">'+ts.pct+'%</div><div class="metric-label">'+ts.done+' / '+ts.total+' marked done</div></div><div class="metric"><div class="metric-label">MOCKS PASSED</div><div class="metric-value">'+stats.passed+' / '+stats.n+'</div><div class="metric-label">Average '+stats.avg+'%</div></div></div><div class="table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr><th>Subject</th><th>Attempts</th><th>Average score</th><th>Passed</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="small muted" style="margin-bottom:0">This is a locally calculated study report, not an official ICAP result. The default pass marker is 60% and does not determine actual exam eligibility or outcomes.</p></section>';
  renderMerit();document.getElementById("generatedResult").innerHTML=generatedResult;toast("Live result generated for "+now.toLocaleDateString());
 }
+function focusStored(){try{return JSON.parse(localStorage.getItem("rk_focus_timer_v2")||"null")}catch(e){return null}}
+function focusElapsed(){var f=focusStored();return f&&f.running?Math.max(0,Math.floor((Date.now()-f.startedAt)/1000)+(Number(f.baseSeconds)||0)):Math.max(0,Number(f&&f.baseSeconds)||0)}
 function toggleFocus(){
- if(focusTicker){clearInterval(focusTicker);focusTicker=null;var secs=focusSeconds;focusSeconds=0;if(secs>0){logSession(secs);toast("Focus session saved: "+duration(secs))}else toast("Focus timer paused.");}
- else{focusTicker=setInterval(function(){focusSeconds++;var n=document.getElementById("focusPageTime");if(n)n.textContent=duration(focusSeconds);updateHeader()},1000);toast("Focus session started. Stay locked in.");}
+ var f=focusStored()||{baseSeconds:0,running:false};
+ if(f.running){var secs=focusElapsed();f={baseSeconds:secs,running:false,startedAt:0};localStorage.setItem("rk_focus_timer_v2",JSON.stringify(f));if(focusTicker){clearInterval(focusTicker);focusTicker=null}focusSeconds=0;if(secs>0){logSession(secs);toast("Focus session saved: "+duration(secs))}else toast("Focus timer paused.");}
+ else{f.startedAt=Date.now();f.running=true;localStorage.setItem("rk_focus_timer_v2",JSON.stringify(f));if(focusTicker)clearInterval(focusTicker);focusTicker=setInterval(function(){focusSeconds=focusElapsed();var n=document.getElementById("focusPageTime");if(n)n.textContent=duration(focusSeconds);updateHeader()},1000);toast("Focus timer started. It keeps running until you pause it.");}
  updateHeader();if(currentPage==="study"&&activeStudyTab==="tools")renderStudy();
 }
 function logSession(seconds){
@@ -719,6 +730,11 @@ function handleAction(el){
  if(act==="ask-study-ai"){askStudyAI();return}
  if(act==="clear-study-ai"){if(studyAILoading){toast("Wait for the current explanation to finish.");return}studyAIHistory=[];studyAIChat=[];studyAIDraft="";studyAIError="";renderStudy();return}
  if(act==="start-quiz")startQuiz();
+ if(act==="start-speedrun")startSpeedRun(false);
+ if(act==="resume-speedrun")startSpeedRun(true);
+ if(act==="pause-speedrun"){if(speedRun&&speedRun.running)pauseSpeedRun();else if(speedRun)startSpeedRun(true)}
+ if(act==="speed-answer"&&speedRun&&speedRun.running){var sq=speedRun.questions.map(function(id){return allQuestions().find(function(q){return q.id===id})}).filter(Boolean)[speedRun.index],si=Number(el.dataset.index);if(sq){speedRun.answers[sq.id]=si;saveSpeedRun();renderSpeedRun()}}
+ if(act==="speed-next"&&speedRun){speedRun.index++;if(speedRun.index>=speedRun.questions.length)finishSpeedRun();else{saveSpeedRun();renderSpeedRun()}}
  if(act==="answer"&&quiz){var q=quiz.questions[quiz.index],ix=Number(el.dataset.index);if(q.multiSelect||Array.isArray(q.answer)){var arr=Array.isArray(quiz.answers[q.id])?quiz.answers[q.id].slice():[];var at=arr.indexOf(ix);if(at>=0)arr.splice(at,1);else arr.push(ix);if(arr.length)quiz.answers[q.id]=arr;else delete quiz.answers[q.id]}else quiz.answers[q.id]=ix;renderQuiz()}
  if(act==="prev-q"&&quiz&&quiz.index>0){quiz.index--;renderQuiz()}
  if(act==="next-q"&&quiz){if(quiz.index<quiz.questions.length-1){quiz.index++;renderQuiz()}else finishQuiz(false)}
@@ -764,7 +780,7 @@ document.addEventListener("change",function(e){
  if(e.target.id==="studyAIKey")studyAIKey=e.target.value;
  if(e.target.id==="studyAIMode")studyAIMode=e.target.value;
  if(e.target.id==="themeSelector")applyTheme(e.target.value,true);
- if(e.target.id==="mockSubject"){renderMock.selectedSubject=e.target.value;updateMockChapter()}
+ if(e.target.id==="mockSubject"){renderMock.selectedSubject=e.target.value;updateMockChapter()}\n if(e.target.id==="speedSubject")populateSpeedChapters();\n if(e.target.id==="speedFrom"||e.target.id==="speedTo")populateSpeedChapters();
  if(e.target.id==="mindmapSubject"){renderMindmaps.subject=e.target.value;renderStudy()}
  if(e.target.id==="pdfInput")handlePdfFiles(e.target.files);
  if(e.target.id==="questionImportInput"&&e.target.files&&e.target.files[0])importQuestionBank(e.target.files[0]);
@@ -788,11 +804,40 @@ document.addEventListener("keydown",function(e){
 });
 document.querySelectorAll("[data-page]").forEach(function(b){b.addEventListener("click",function(){if(quiz&&currentPage==="mock"&&b.dataset.page!=="mock"){openModal('<h2>Leave the active mock?</h2><p class="muted">Your current attempt has not been submitted and will be lost if you leave.</p><div class="actions"><button class="btn danger" data-action="leave-quiz" data-page-target="'+b.dataset.page+'">Leave mock</button><button class="btn ghost" data-action="close-modal">Stay here</button></div>');return}showPage(b.dataset.page)})});
 document.addEventListener("click",function(e){var el=e.target.closest('[data-action="leave-quiz"]');if(el){clearInterval(quizTicker);quizTicker=null;quiz=null;closeModal();showPage(el.dataset.pageTarget)}});
+function speedChapters(subject){var seen={};questionsFor(subject).forEach(function(q){seen[q.chapter||"Uncategorised"]=true});return Object.keys(seen).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"})})}
+function populateSpeedChapters(){
+ var sub=(document.getElementById("speedSubject")||{}).value||"prc1-fa",from=document.getElementById("speedFrom"),to=document.getElementById("speedTo");if(!from||!to)return;
+ var chapters=speedChapters(sub);var opts=chapters.map(function(c,i){return '<option value="'+esc(c)+'">'+esc(c)+'</option>'}).join("");from.innerHTML=opts;to.innerHTML=opts;if(chapters.length)to.selectedIndex=chapters.length-1;
+ var info=document.getElementById("speedInfo");if(info)info.innerHTML='<b>'+questionsFor(sub).length+' questions available</b><div class="small muted">Range contains '+speedPool(sub,from.value,to.value).length+' questions. Each question is worth 2 marks.</div>';
+}
+function speedPool(subject,from,to){var cs=speedChapters(subject),a=Math.max(0,cs.indexOf(from)),b=Math.max(a,cs.indexOf(to));var allowed=cs.slice(a,b+1);return questionsFor(subject).filter(function(q){return allowed.indexOf(q.chapter||"Uncategorised")>=0})}
+function saveSpeedRun(){try{if(speedRun)localStorage.setItem("rk_speedrun_v1",JSON.stringify(speedRun));else localStorage.removeItem("rk_speedrun_v1")}catch(e){}}
+function startSpeedRun(resume){
+ if(resume){try{speedRun=JSON.parse(localStorage.getItem("rk_speedrun_v1")||"null")}catch(e){speedRun=null}if(!speedRun||!speedRun.questions||!speedRun.questions.length){toast("No saved Speed Run to resume.");return}}
+ else{
+  var sub=(document.getElementById("speedSubject")||{}).value||"prc1-fa",from=(document.getElementById("speedFrom")||{}).value,to=(document.getElementById("speedTo")||{}).value,count=Number((document.getElementById("speedCount")||{}).value)||50;
+  var pool=speedPool(sub,from,to);if(!pool.length){toast("No questions in this chapter range. Choose a wider range.");return}
+  pool=pool.slice().sort(function(){return Math.random()-.5});speedRun={mode:"speed",subject:sub,from:from,to:to,questions:pool.slice(0,Math.min(count,pool.length)).map(function(q){return q.id}),index:0,answers:{},seconds:0,startedAt:Date.now(),running:true,feedback:null};
+  saveSpeedRun();
+ }
+ if(speedRunTicker)clearInterval(speedRunTicker);
+ if(!speedRun.running){speedRun.running=true;speedRun.startedAt=Date.now();saveSpeedRun()}
+ speedRunTicker=setInterval(function(){if(speedRun&&speedRun.running){speedRun.seconds=(Number(speedRun.seconds)||0)+1;saveSpeedRun();var t=document.getElementById("speedClock");if(t)t.textContent=duration(speedRun.seconds)}},1000);
+ renderSpeedRun();
+}
+function pauseSpeedRun(){if(!speedRun)return;speedRun.running=false;if(speedRunTicker)clearInterval(speedRunTicker);speedRunTicker=null;saveSpeedRun();renderSpeedRun();toast("Speed Run paused — your place is saved on this device.")}
+function renderSpeedRun(){
+ if(!speedRun)return;var all=allQuestions(),qs=speedRun.questions.map(function(id){return all.find(function(q){return q.id===id})}).filter(Boolean);speedRun.questions=qs.map(function(q){return q.id});var q=qs[speedRun.index];
+ if(!q){finishSpeedRun();return}
+ var picked=speedRun.answers[q.id],correct=answersEqual(picked,q.answer),answered=picked!==undefined,options=q.options.map(function(opt,i){var cls="speed-option";if(answered&&i===q.answer)cls+=" right";if(answered&&i===picked&&i!==q.answer)cls+=" wrong";return '<button class="'+cls+'" data-action="speed-answer" data-index="'+i+'" '+(answered||!speedRun.running?"disabled":"")+'><span class="letter">'+String.fromCharCode(65+i)+'</span><span>'+esc(opt)+'</span></button>'}).join("");
+ pageShell('<section class="panel speedrun-screen"><div class="panel-head"><div><div class="eyebrow">⚡ SPEED RUN / '+esc(subj(speedRun.subject).prc)+'</div><h2>Question '+(speedRun.index+1)+' / '+qs.length+'</h2><div class="small muted">'+esc(q.chapter||"General")+' · 2 marks each</div></div><div class="speed-clock"><span class="small muted">ELAPSED</span><strong id="speedClock">'+duration(speedRun.seconds)+'</strong><button class="btn sm ghost" data-action="pause-speedrun">'+(speedRun.running?"Ⅱ Pause":"▶ Resume")+'</button></div></div><div class="bar"><span style="width:'+Math.round(speedRun.index/qs.length*100)+'%"></span></div><h3 class="speed-question">'+esc(q.question)+'</h3><div class="speed-options">'+options+'</div>'+(answered?'<div class="speed-feedback '+(correct?"good":"bad")+'"><b>'+(correct?"✓ Correct! +2 marks":"✕ Not quite — correct answer: "+esc(formatAnswer(q,q.answer)))+'</b><p>'+esc(q.explanation||"The source question bank does not include a worked explanation for this item. Review the relevant concept in your Study Text.")+'</p><button class="btn primary" data-action="speed-next">'+(speedRun.index===qs.length-1?"Finish sprint":"Next question →")+'</button></div>':(!speedRun.running?'<div class="notice">Paused. Resume to continue this question.</div>':'<p class="small muted">Choose an option. Feedback appears immediately; tap Next when you are ready.</p>'))+'</section>');
+}
+function finishSpeedRun(){if(speedRunTicker)clearInterval(speedRunTicker);speedRunTicker=null;var qs=speedRun.questions.map(function(id){return allQuestions().find(function(q){return q.id===id})}).filter(Boolean),correct=qs.filter(function(q){return answersEqual(speedRun.answers[q.id],q.answer)}).length,pct=qs.length?Math.round(correct/qs.length*100):0,marks=correct*2,record={id:"speed-"+Date.now(),subject:speedRun.subject,chapter:speedRun.from+" → "+speedRun.to,correct:correct,total:qs.length,pct:pct,seconds:speedRun.seconds,date:todayISO(),dateLabel:new Date().toLocaleString(),questionIds:qs.map(function(q){return q.id}),speedRun:true,marks:marks,passed:marks>50};state.history.unshift(record);state.history=state.history.slice(0,300);saveState();speedRun=null;saveSpeedRun();showResult(record,qs.map(function(q){return {q:q,picked:undefined,ok:answersEqual(undefined,q.answer)}}),false);toast("Speed Run complete: "+marks+" / "+(qs.length*2)+" marks. "+(marks>50?"PASS":"KEEP PRACTISING"))}
 function init(){
  resetAccidentalPdfImportsOnce();
  ensureSyllabusTopics();
  loadBuiltInQuestionBanks();
- applyTheme(state.settings.theme||"cyber",false);updateHeader();setInterval(updateHeader,1000);
+ applyTheme(state.settings.theme||"cyber",false);var savedFocus=focusStored();if(savedFocus&&savedFocus.running){focusTicker=setInterval(function(){focusSeconds=focusElapsed();var n=document.getElementById("focusPageTime");if(n)n.textContent=duration(focusSeconds);updateHeader()},1000)}updateHeader();setInterval(updateHeader,1000);
  showPage("home");
  if(!window.indexedDB){var side=document.getElementById("sideFocusMessage");if(side)side.textContent="PDF storage may be unavailable in this browser."}
 }
