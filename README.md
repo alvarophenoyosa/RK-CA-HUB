@@ -53,3 +53,18 @@ Subject IDs:
 Legacy progress and imported question data using `prc2-qm` or `prc2-fm` are normalised to `prc2-qa`; old `prc3-bi` and `prc3-eco` items are normalised to `prc3-bei` when the site loads.
 
 **Built-in practice question set:** the Mock tab downloads a compressed, combined question pack from `data/question-banks/all-prc-question-banks.json.gz.b64` (internet required for the initial/refresh load) and loads **1,886 answer-key-mapped practice questions**: 497 PRC 1, 407 PRC 2, and 982 PRC 3 (both volumes). Items were extracted from the supplied ICAP question-bank/self-test PDFs and matched to their printed answer keys. This is the confidently parsed set, not a guarantee that every question on every page of every PDF was digitised. PDF text layout may have introduced occasional formatting defects, so source PDFs should be consulted if a question appears malformed. Most source items do not include worked explanations; the site does not invent official explanations. The JSON template/importer remains available for additional verified questions. The Merit page produces a personal study report, not an official ICAP result or merit list.
+
+## Private cross-device progress sync (Supabase)
+
+The Profile page has an optional Supabase Auth + PostgreSQL sync setup. To activate it:
+
+1. Create a project at https://supabase.com/dashboard.
+2. In the project, open **SQL Editor** and run the full contents of [`supabase/schema.sql`](supabase/schema.sql). The table uses Row Level Security and policies restrict every row to its authenticated `auth.uid()`.
+3. In **Project Settings → API**, copy the Project URL and the **publishable** key (or legacy anon key). Never put a `service_role` key in the browser.
+4. Open the deployed site → **Profile** → paste the URL/key → **Save config & connect**.
+5. Enter your email/password and choose **Create account** or **Sign in**. If email confirmation is enabled, confirm the email first.
+6. On every other device, repeat the URL/key setup once and sign in with the same account.
+
+The app stores study state as JSON in `public.student_state`; the primary key is the authenticated user's UUID. RLS protects select/insert/update. PDF file blobs and AI helper API keys are intentionally excluded from cloud sync; PDFs remain local to each device. Existing local progress is kept on-device. When both local and cloud progress exist, the app asks whether to load cloud progress or keep local progress and upload it. Back up important data before the first merge.
+
+Supabase project creation, keys, email-auth settings and SQL execution require action in your own Supabase dashboard; they cannot be completed from this GitHub repository alone.
