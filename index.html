@@ -179,6 +179,7 @@ body[data-theme="classic"] .score-legend{font-family:Georgia,"Times New Roman",s
 .speedrun-launch{margin:0 0 16px;border-color:rgba(99,239,181,.32);background:linear-gradient(125deg,rgba(17,45,49,.82),rgba(15,23,43,.96));animation:enter .42s ease both}.speedrun-screen{animation:enter .22s ease both}.speed-clock{display:grid;gap:3px;text-align:right;justify-items:end}.speed-clock strong{font-size:24px;font-variant-numeric:tabular-nums;color:var(--cyan)}.speed-question{font-size:clamp(19px,2.5vw,27px);line-height:1.45;margin:24px 0}.speed-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.speed-option{display:flex;align-items:center;gap:13px;text-align:left;min-height:86px;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--control-bg);color:var(--text);font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.speed-option:not(:disabled):hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 10px 28px rgba(71,231,242,.12)}.speed-option .letter{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:rgba(119,134,255,.14);color:var(--cyan);font-weight:900}.speed-option.right{border-color:var(--green);background:rgba(99,239,181,.14);box-shadow:0 0 0 1px rgba(99,239,181,.2)}.speed-option.wrong{border-color:var(--danger);background:rgba(255,113,138,.13);animation:wrongShake .28s ease}.speed-feedback{margin-top:18px;padding:18px;border-radius:16px;animation:enter .24s ease both}.speed-feedback.good{border:1px solid rgba(99,239,181,.4);background:rgba(99,239,181,.09)}.speed-feedback.bad{border:1px solid rgba(255,113,138,.4);background:rgba(255,113,138,.08)}.speed-feedback p{line-height:1.7}.speed-feedback.good b{color:var(--green)}.speed-feedback.bad b{color:var(--danger)}@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@media(max-width:680px){.speed-options{grid-template-columns:1fr}.speed-option{min-height:72px}.speed-clock strong{font-size:19px}}
 .study-key-row{display:flex;gap:8px;align-items:stretch}.study-key-row input{flex:1;min-width:0}.study-key-row .btn{white-space:nowrap}.study-ai-text{white-space:normal;line-height:1.8;overflow-wrap:anywhere}.study-ai-text p{margin:0 0 12px}.study-ai-text p:last-child{margin-bottom:0}.study-ai-text h3,.study-ai-text h4{margin:18px 0 9px;color:#67e8f9;line-height:1.35}.study-ai-text h3{font-size:18px}.study-ai-text h4{font-size:15px}.study-ai-text strong{color:#f0abfc;font-weight:800}.study-ai-text em{color:#a5f3fc}.study-ai-text ul{padding-left:24px;margin:9px 0 15px}.study-ai-text li{margin:6px 0}.study-ai-text code{font-family:ui-monospace,Consolas,monospace;background:rgba(139,92,246,.18);padding:2px 6px;border-radius:5px;color:#a5f3fc}.study-ai-text del{color:#fda4af}@media(max-width:620px){.study-key-row{flex-wrap:wrap}.study-key-row input{flex-basis:100%}.study-key-row .btn{flex:1}}
 .study-ai-text .fraction{display:inline-flex;vertical-align:middle;flex-direction:column;text-align:center;line-height:1.2;margin:0 .15em}.study-ai-text .fraction>span:first-child{border-bottom:1px solid currentColor;padding:0 .25em .12em}.study-ai-text .fraction>span:last-child{padding:.12em .25em 0}.study-ai-text sup,.study-ai-text sub{font-size:.76em;line-height:0}.study-ai-text u{text-decoration-color:#22d3ee;text-decoration-thickness:2px;text-underline-offset:3px}.study-ai-text strong{font-weight:800;color:#f0abfc}
+.cloud-pdf-frame{height:min(78vh,900px);min-height:420px;background:#090d18;border-radius:12px;overflow:hidden;border:1px solid var(--border)}.cloud-pdf-frame iframe{width:100%;height:100%;min-height:420px;border:0;background:#fff}.cloud-pdf-viewer{margin-top:16px}.cloud-pdf-viewer .panel-head{align-items:center}@media(max-width:700px){.cloud-pdf-frame,.cloud-pdf-frame iframe{min-height:65vh}}
 </style>
 </head>
 <body>
@@ -257,6 +258,10 @@ var speedRunTicker=null;
 var speedAutoTimer=null;
 var generatedResult=null;
 var activeStudyTab="library";
+var activePdfSubject="PRC 1";
+var cloudPdfs=[];
+var activeCloudPdf=null;
+var cloudPdfBusy=false;
  var activeMistakeTab="speed";
 var studyAIKey="";
 try{studyAIKey=localStorage.getItem("rkca-groq-api-key-v1")||""}catch(e){}
@@ -585,12 +590,58 @@ function showResult(record,items,expired){
  items.forEach(function(x,i){html+='<section class="panel" style="margin-bottom:10px;padding:17px"><div class="panel-head"><div><div class="eyebrow">QUESTION '+(i+1)+'</div><h3 style="margin-top:5px">'+esc(x.q.question)+'</h3></div><span class="tag '+(x.ok?"green":"pink")+'">'+(x.ok?"CORRECT":"INCORRECT")+'</span></div><div class="small muted">Your answer: <b style="color:var(--text)">'+esc(formatAnswer(x.q,x.picked))+'</b></div><div class="small muted" style="margin-top:4px">Correct answer: <b style="color:var(--green)">'+esc(formatAnswer(x.q,x.q.answer))+'</b></div><div class="tool-result"><b style="font-size:11px">EXPLANATION</b><div class="small" style="margin-top:4px">'+esc(x.q.explanation||"No explanation was provided in this question bank.")+'</div></div></section>'});
  document.getElementById("appView").innerHTML='<div class="view">'+html+'</div>';document.getElementById("crumb").textContent="PRACTICE LAB / RESULTS";document.getElementById("pageTitle").textContent="Mock report";updateHeader();
 }
+
+async function loadCloudPdfs(){
+ if(!cloudSync.user||!cloudSync.client){cloudPdfs=[];return}
+ try{var r=await cloudSync.client.from("user_study_pdfs").select("id,subject,title,original_name,object_path,size_bytes,created_at").order("created_at",{ascending:false});if(r.error)throw r.error;cloudPdfs=r.data||[]}
+ catch(e){console.error("Could not load personal PDF library",e);cloudPdfs=[];toast("Could not load cloud PDFs: "+(e.message||"check account permissions"))}
+}
+function renderMyPdfs(){
+ var subjectsBar=["PRC 1","PRC 2","PRC 3"].map(function(x){return '<button class="pill '+(activePdfSubject===x?"active":"")+'" data-action="my-pdf-subject" data-subject="'+x+'">'+x+'</button>'}).join("");
+ var rows=cloudPdfs.filter(function(f){return f.subject===activePdfSubject}).map(function(f){return '<div class="file-card"><div class="row-icon">PDF</div><div class="row-main"><strong>'+esc(f.title)+'</strong><small>'+esc(f.original_name)+' · '+sizeText(Number(f.size_bytes)||0)+' · Cloud saved</small></div><button class="btn sm primary" data-action="open-cloud-pdf" data-id="'+f.id+'">Read here</button><button class="btn sm ghost" data-action="delete-cloud-pdf" data-id="'+f.id+'">Delete</button></div>'}).join("");
+ var current=cloudPdfs.find(function(f){return f.id===activeCloudPdf&&f.subject===activePdfSubject});
+ var viewer=current?'<section class="panel cloud-pdf-viewer"><div class="panel-head"><div><h3>'+esc(current.title)+'</h3><small class="muted">Reading inside RK | CA - HUB</small></div><button class="btn sm ghost" data-action="close-cloud-pdf">Close reader</button></div><div id="cloudPdfFrame" class="cloud-pdf-frame"><div class="notice cyan">Opening secure PDF…</div></div></section>':'';
+ return '<section class="panel"><div class="eyebrow">YOUR PRIVATE CLOUD LIBRARY</div><h2>My PRC PDFs</h2><p class="muted">Upload your own PDFs, sort them into PRC 1, PRC 2 or PRC 3, and give each file any title. Files are saved to your account, not just this browser. PDFs open in the reader below, without downloading first.</p><div class="pill-row" style="margin:14px 0">'+subjectsBar+'</div><div class="grid two"><div><label for="cloudPdfTitle">PDF NAME (YOU CHOOSE)</label><input id="cloudPdfTitle" placeholder="e.g. Chapter 4 — Depreciation"><label for="cloudPdfInput" style="display:block;margin-top:12px">SELECT PDF (MAX 50 MB)</label><input id="cloudPdfInput" type="file" accept="application/pdf,.pdf"><button class="btn primary" style="margin-top:12px" data-action="save-cloud-pdf" '+(cloudPdfBusy?"disabled":"")+'>'+(cloudPdfBusy?"Uploading…":"＋ Upload to "+activePdfSubject)+'</button></div><div class="notice cyan"><b>Private to your account</b><br>Stored in secure cloud storage. Sign in on another device to see the same PDFs. Only your account can list or open them.</div></div><div class="section-title"><div><h3>'+activePdfSubject+' files</h3><p>'+cloudPdfs.filter(function(f){return f.subject===activePdfSubject}).length+' PDF(s) saved</p></div></div><div class="grid" style="gap:9px">'+(rows||empty("No PDFs in "+activePdfSubject,"Upload your first PDF above.")).replace(/^/,"")+'</div></section>'+viewer;
+}
+async function uploadCloudPdf(){
+ if(!cloudSync.user||!cloudSync.client){toast("Sign in to your account first.");return}
+ if(cloudPdfBusy)return;
+ var input=document.getElementById("cloudPdfInput"),titleInput=document.getElementById("cloudPdfTitle"),file=input&&input.files&&input.files[0];
+ if(!file){toast("Choose a PDF first.");return}
+ if(!(file.type==="application/pdf"||/\.pdf$/i.test(file.name))){toast("Please choose a PDF file.");return}
+ if(file.size>52428800){toast("PDF must be 50 MB or smaller.");return}
+ var title=String(titleInput&&titleInput.value||"").trim()||file.name.replace(/\.pdf$/i,"");
+ cloudPdfBusy=true;renderStudy();
+ try{
+  var safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_"),path=cloudSync.user.id+"/"+activePdfSubject.replace(/\s/g,"")+"/"+Date.now()+"_"+safeName;
+  var up=await cloudSync.client.storage.from("user-study-pdfs").upload(path,file,{contentType:"application/pdf",upsert:false});if(up.error)throw up.error;
+  var meta=await cloudSync.client.from("user_study_pdfs").insert({user_id:cloudSync.user.id,subject:activePdfSubject,title:title,original_name:file.name,object_path:path,size_bytes:file.size}).select().single();
+  if(meta.error){await cloudSync.client.storage.from("user-study-pdfs").remove([path]);throw meta.error}
+  await loadCloudPdfs();activeCloudPdf=meta.data.id;toast("PDF saved to your account.");renderStudy();openCloudPdfInReader(meta.data)
+ }catch(e){console.error(e);toast("Upload failed: "+(e.message||"check cloud storage setup"));renderStudy()}
+ finally{cloudPdfBusy=false}
+}
+async function openCloudPdfInReader(file){
+ if(!cloudSync.client||!file)return;
+ var r=await cloudSync.client.storage.from("user-study-pdfs").createSignedUrl(file.object_path,3600);
+ if(r.error){toast("Could not open PDF: "+r.error.message);return}
+ var host=document.getElementById("cloudPdfFrame");if(!host)return;
+ host.innerHTML='<iframe title="'+esc(file.title)+'" src="'+esc(r.data.signedUrl)+'#toolbar=1&navpanes=0&view=FitH" loading="lazy"></iframe>';
+}
+async function deleteCloudPdf(id){
+ var file=cloudPdfs.find(function(f){return f.id===id});if(!file||!cloudSync.user)return;
+ if(!confirm('Delete "'+file.title+'" from your account?'))return;
+ try{var d=await cloudSync.client.from("user_study_pdfs").delete().eq("id",id).eq("user_id",cloudSync.user.id);if(d.error)throw d.error;var r=await cloudSync.client.storage.from("user-study-pdfs").remove([file.object_path]);if(r.error)console.warn(r.error);cloudPdfs=cloudPdfs.filter(function(f){return f.id!==id});if(activeCloudPdf===id)activeCloudPdf=null;renderStudy();toast("PDF deleted from your cloud library.")}
+ catch(e){toast("Could not delete PDF: "+(e.message||"unknown error"))}
+}
+
 function renderStudy(){
  var tab=activeStudyTab;
- var tabs=[["library","Study library"],["ai","AI Study Buddy"],["topics","Topic tracker"],["mindmaps","Mind maps"],["formulas","Formula bank"],["tools","Calculators & tools"],["mistakes","Mistakes bank"]];
+ var tabs=[["library","Study library"],["my-pdfs","My PRC PDFs"],["ai","AI Study Buddy"],["topics","Topic tracker"],["mindmaps","Mind maps"],["formulas","Formula bank"],["tools","Calculators & tools"],["mistakes","Mistakes bank"]];
  var bar='<div class="pill-row" style="margin-bottom:16px">'+tabs.map(function(t){return '<button class="pill '+(tab===t[0]?"active":"")+'" data-action="study-tab" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div>';
  var body="";
  if(tab==="library")body=renderLibrary();
+ if(tab==="my-pdfs")body=renderMyPdfs();
  if(tab==="ai")body=renderStudyAI();
  if(tab==="topics")body=renderTopics();
  if(tab==="mindmaps")body=renderMindmaps();
@@ -598,6 +649,7 @@ function renderStudy(){
  if(tab==="tools")body=renderTools();
  if(tab==="mistakes")body=renderMistakes();
  pageShell(bar+body);
+ if(tab==="my-pdfs"&&activeCloudPdf){var chosen=cloudPdfs.find(function(f){return f.id===activeCloudPdf&&f.subject===activePdfSubject});if(chosen)openCloudPdfInReader(chosen)}
 }
 
 function formatStudyAI(value){
@@ -874,6 +926,11 @@ function handleAction(el){
  if(act==="clear-imported-pdfs"){openModal('<h2>Clear imported local PDFs?</h2><p class="muted">This removes only the PDFs you imported into this browser. Your profile, official syllabus tracker, mock history and mistakes are preserved. Public PDF links in the Study catalogue are not deleted.</p><div class="actions"><button class="btn danger" data-action="confirm-clear-imported-pdfs">Clear local PDFs</button></div>')}
  if(act==="confirm-clear-imported-pdfs"){state.importedFiles=[];saveState();closeModal();clearPdfStoreSilently().then(function(){renderStudy();toast("Local PDF vault cleared. Your progress was preserved.")}).catch(function(){renderStudy();toast("PDF list cleared; browser storage could not be fully cleared.")})}
  if(act==="upload-pdf")uploadPdf();
+ if(act==="my-pdf-subject"){activePdfSubject=el.dataset.subject;activeCloudPdf=null;loadCloudPdfs().then(renderStudy);return}
+ if(act==="save-cloud-pdf"){uploadCloudPdf();return}
+ if(act==="open-cloud-pdf"){activeCloudPdf=el.dataset.id;renderStudy();return}
+ if(act==="close-cloud-pdf"){activeCloudPdf=null;renderStudy();return}
+ if(act==="delete-cloud-pdf"){deleteCloudPdf(el.dataset.id);return}
  if(act==="open-file")openPdf(el.dataset.id);
  if(act==="delete-file"){var id=el.dataset.id;dbDelete(id).then(function(){state.importedFiles=state.importedFiles.filter(function(f){return f.id!==id});saveState();renderStudy();toast("Local PDF removed.")}).catch(function(){toast("Could not remove the file.")})}
  if(act==="add-topic-subject"){activeStudyTab="topics";showPage("study");setTimeout(function(){var sel=document.getElementById("topicSubject");if(sel)sel.value=el.dataset.subject},0)}
@@ -912,6 +969,7 @@ document.addEventListener("change",function(e){
  if(e.target.id==="speedFrom"||e.target.id==="speedTo"){var si=document.getElementById("speedInfo"),ss=(document.getElementById("speedSubject")||{}).value||"prc1-fa",sf=document.getElementById("speedFrom"),st=document.getElementById("speedTo");if(si&&sf&&st)si.innerHTML="<b>"+questionsFor(ss).length+" questions available</b><div class=\"small muted\">Range contains "+speedPool(ss,sf.value,st.value).length+" questions. Each question is worth 2 marks.</div>";}
  if(e.target.id==="mindmapSubject"){renderMindmaps.subject=e.target.value;renderStudy()}
  if(e.target.id==="pdfInput")handlePdfFiles(e.target.files);
+ if(e.target.id==="cloudPdfInput"&&e.target.files&&e.target.files[0]){var lab=document.getElementById("cloudPdfTitle");if(lab&&!lab.value)lab.value=e.target.files[0].name.replace(/\.pdf$/i,"");}
  if(e.target.id==="questionImportInput"&&e.target.files&&e.target.files[0])importQuestionBank(e.target.files[0]);
  if(e.target.id==="backupImport"&&e.target.files&&e.target.files[0]){var f=e.target.files[0],fr=new FileReader();fr.onload=function(){try{var d=JSON.parse(fr.result);["profile","topics","questionBanks","history","mistakes","sessions","lastStudyDate","streak","settings"].forEach(function(k){if(d[k]!==undefined)state[k]=d[k]});saveState();showPage(currentPage);toast("Backup imported.")}catch(err){toast("Could not read the backup JSON.")}};fr.readAsText(f)}
 });
