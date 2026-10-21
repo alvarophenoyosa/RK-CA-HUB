@@ -901,7 +901,7 @@ function handleAction(el){
  if(act==="cloud-sync-now"){if(!cloudSync.client||!cloudSync.user){toast("Connect and sign in first.");return}pushCloudState();return}
  if(act==="cloud-logout"){cloudSignOut();return}
  if(act==="go-home")showPage("home");if(act==="go-mock")showPage("mock");if(act==="go-study"){activeStudyTab="library";showPage("study")}if(act==="go-profile")showPage("profile");if(act==="go-mistakes"){activeStudyTab="mistakes";showPage("study")}
- if(act==="study-tab"){activeStudyTab=el.dataset.tab;renderStudy()}
+ if(act==="study-tab"){activeStudyTab=el.dataset.tab;if(activeStudyTab==="my-pdfs"){loadCloudPdfs().then(renderStudy)}else renderStudy();return}
  if(act==="mistake-tab"){activeMistakeTab=el.dataset.tab;renderStudy();return}
  if(act==="explain-mistake"){explainMistake(el.dataset.id);return}
  if(act==="save-study-ai-key"){var ki=document.getElementById("studyAIKey"),kv=String(ki&&ki.value||"").trim();if(!kv){toast("Paste your Groq key first.");return}studyAIKey=kv;try{localStorage.setItem("rkca-groq-api-key-v1",kv);toast("Groq key saved on this device.")}catch(e){toast("Browser could not save the key; it will work only in this tab.")}renderStudy();return}
