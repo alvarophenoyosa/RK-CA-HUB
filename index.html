@@ -413,7 +413,8 @@ function renderHome(){
  );
 }
 function renderMock(){
- if(speedRun){renderSpeedRun();return}\n if(quiz){renderQuiz();return}
+ if(speedRun){renderSpeedRun();return}
+ if(quiz){renderQuiz();return}
  var selected=(renderMock.selectedSubject||"prc1-fa");
  var total=questionsFor(selected).length;
  var tests=testStats();
@@ -780,7 +781,9 @@ document.addEventListener("change",function(e){
  if(e.target.id==="studyAIKey")studyAIKey=e.target.value;
  if(e.target.id==="studyAIMode")studyAIMode=e.target.value;
  if(e.target.id==="themeSelector")applyTheme(e.target.value,true);
- if(e.target.id==="mockSubject"){renderMock.selectedSubject=e.target.value;updateMockChapter()}\n if(e.target.id==="speedSubject")populateSpeedChapters();\n if(e.target.id==="speedFrom"||e.target.id==="speedTo")populateSpeedChapters();
+ if(e.target.id==="mockSubject"){renderMock.selectedSubject=e.target.value;updateMockChapter()}
+ if(e.target.id==="speedSubject")populateSpeedChapters();
+ if(e.target.id==="speedFrom"||e.target.id==="speedTo")populateSpeedChapters();
  if(e.target.id==="mindmapSubject"){renderMindmaps.subject=e.target.value;renderStudy()}
  if(e.target.id==="pdfInput")handlePdfFiles(e.target.files);
  if(e.target.id==="questionImportInput"&&e.target.files&&e.target.files[0])importQuestionBank(e.target.files[0]);
