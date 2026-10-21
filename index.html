@@ -45,6 +45,24 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
 /* Keep study reading calm: motion only when useful, never while reading text */
 @media(prefers-reduced-motion:reduce){body:after,.app,.nav button.active,.toast{animation:none!important}.panel,.mini-card,.stat-card,.metric-card,.subject-card,.question-card,.result-card,.profile-card,.resource-card,.mock-card,.formula-card,button,.btn,.nav button,input,select,textarea,.progress-fill,.progress-bar,.bar-fill,.progress-ring{transition:none!important}}
 
+
+/* Study-game layer: correct answers, completion moments, and streak energy */
+.speed-option.right,.option.right,.answer-option.correct{animation:rk-correct-pop 420ms cubic-bezier(.2,.8,.2,1) both}
+.speed-option.wrong,.option.wrong,.answer-option.incorrect{animation:rk-wrong-nudge 300ms ease both}
+.speed-feedback.good{animation:rk-celebrate-in 360ms cubic-bezier(.2,.8,.2,1) both;position:relative;overflow:hidden}
+.speed-feedback.good:after{content:"✦  ✧  ✦";position:absolute;right:14px;top:8px;color:var(--green);letter-spacing:.4em;opacity:0;animation:rk-sparkle 900ms ease-out both}
+.speed-feedback.bad{animation:rk-feedback-in 260ms ease-out both}
+.speedrun-screen .bar span{transition:width 420ms cubic-bezier(.2,.7,.2,1)}
+.progress-ring strong{transition:transform 280ms cubic-bezier(.2,.8,.2,1)}
+.panel:has(.speed-feedback.good){border-color:color-mix(in srgb,var(--green) 32%,var(--line))}
+@keyframes rk-correct-pop{0%{transform:scale(.985)}55%{transform:scale(1.018)}100%{transform:scale(1)}}
+@keyframes rk-wrong-nudge{0%,100%{transform:translateX(0)}30%{transform:translateX(-3px)}65%{transform:translateX(3px)}}
+@keyframes rk-celebrate-in{0%{opacity:0;transform:translateY(7px) scale(.99)}70%{opacity:1;transform:translateY(-1px) scale(1.005)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes rk-feedback-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rk-sparkle{0%{opacity:0;transform:translateY(7px) scale(.7)}25%{opacity:.95}100%{opacity:0;transform:translateY(-10px) scale(1.1)}}
+.speedrun-screen h2,.result-screen h2{animation:rk-feedback-in 360ms ease-out both}
+.toast:has(+ .toast){animation:rk-toast-in 220ms ease-out both}
+
 /* Theme chooser, colour-coded scores and per-subject progress */
 body[data-theme="cyber"]{--bg:#080c18;--panel:#10172a;--panel2:#0c1222;--line:rgba(145,170,220,.16);--text:#edf4ff;--muted:#8f9db9;--cyan:#47e7f2;--blue:#7786ff;--pink:#ff54bc;--green:#63efb5;--amber:#ffc66d;--danger:#ff718a;--progress-start:#47e7f2;--progress-end:#7786ff;--ring-track:rgba(130,150,190,.12);--control-bg:#0a1020;--shadow:0 18px 50px rgba(0,0,0,.24)}
 
