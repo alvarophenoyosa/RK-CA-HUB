@@ -400,7 +400,7 @@ function toast(msg){var root=document.getElementById("toastRoot");root.innerHTML
 function iconFor(s){return {"prc1-fa":"◫","prc2-qa":"∑","prc2-qa":"↗","prc3-bei":"◈","prc3-bei":"⌁"}[s]||"✦"}
 function subjectOptions(selected){return subjects.map(function(s){return '<option value="'+s.id+'" '+(s.id===selected?"selected":"")+'>'+esc(s.prc+" — "+s.name)+'</option>'}).join("")}
 function empty(title,desc,action,label){return '<div class="empty"><b>'+esc(title)+'</b>'+esc(desc)+(action?'<div style="margin-top:12px"><button class="btn sm" data-action="'+action+'">'+esc(label||"Get started")+'</button></div>':"")+'</div>'}
-function pageShell(body){document.getElementById("appView").innerHTML='<div class="view">'+body+'</div>';updateHeader()}
+function pageShell(body){document.getElementById("appView").innerHTML='<div class="view">'+body+'</div>';var cfg=cloudConfig(),u=document.getElementById("cloudUrl"),k=document.getElementById("cloudKey");if(u)u.value=cfg.url||"";if(k)k.value=cfg.key||"";updateCloudStatusUI();updateHeader()}
 function renderPage(){if(currentPage==="home")renderHome();else if(currentPage==="mock")renderMock();else if(currentPage==="study")renderStudy();else if(currentPage==="profile")renderProfile();else if(currentPage==="merit")renderMerit()}
 function renderHome(){
  var ts=topicStats(),tests=testStats(),seconds=currentTotalSeconds(),deadline=state.profile.deadline,days=deadline?Math.ceil((new Date(deadline+"T23:59:59").getTime()-Date.now())/86400000):null;
