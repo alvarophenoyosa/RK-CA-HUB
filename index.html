@@ -178,6 +178,7 @@ body[data-theme="classic"] .score-legend{font-family:Georgia,"Times New Roman",s
 
 .speedrun-launch{margin:0 0 16px;border-color:rgba(99,239,181,.32);background:linear-gradient(125deg,rgba(17,45,49,.82),rgba(15,23,43,.96));animation:enter .42s ease both}.speedrun-screen{animation:enter .22s ease both}.speed-clock{display:grid;gap:3px;text-align:right;justify-items:end}.speed-clock strong{font-size:24px;font-variant-numeric:tabular-nums;color:var(--cyan)}.speed-question{font-size:clamp(19px,2.5vw,27px);line-height:1.45;margin:24px 0}.speed-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.speed-option{display:flex;align-items:center;gap:13px;text-align:left;min-height:86px;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--control-bg);color:var(--text);font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}.speed-option:not(:disabled):hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 10px 28px rgba(71,231,242,.12)}.speed-option .letter{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:rgba(119,134,255,.14);color:var(--cyan);font-weight:900}.speed-option.right{border-color:var(--green);background:rgba(99,239,181,.14);box-shadow:0 0 0 1px rgba(99,239,181,.2)}.speed-option.wrong{border-color:var(--danger);background:rgba(255,113,138,.13);animation:wrongShake .28s ease}.speed-feedback{margin-top:18px;padding:18px;border-radius:16px;animation:enter .24s ease both}.speed-feedback.good{border:1px solid rgba(99,239,181,.4);background:rgba(99,239,181,.09)}.speed-feedback.bad{border:1px solid rgba(255,113,138,.4);background:rgba(255,113,138,.08)}.speed-feedback p{line-height:1.7}.speed-feedback.good b{color:var(--green)}.speed-feedback.bad b{color:var(--danger)}@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@media(max-width:680px){.speed-options{grid-template-columns:1fr}.speed-option{min-height:72px}.speed-clock strong{font-size:19px}}
 .study-key-row{display:flex;gap:8px;align-items:stretch}.study-key-row input{flex:1;min-width:0}.study-key-row .btn{white-space:nowrap}.study-ai-text{white-space:normal;line-height:1.8;overflow-wrap:anywhere}.study-ai-text p{margin:0 0 12px}.study-ai-text p:last-child{margin-bottom:0}.study-ai-text h3,.study-ai-text h4{margin:18px 0 9px;color:#67e8f9;line-height:1.35}.study-ai-text h3{font-size:18px}.study-ai-text h4{font-size:15px}.study-ai-text strong{color:#f0abfc;font-weight:800}.study-ai-text em{color:#a5f3fc}.study-ai-text ul{padding-left:24px;margin:9px 0 15px}.study-ai-text li{margin:6px 0}.study-ai-text code{font-family:ui-monospace,Consolas,monospace;background:rgba(139,92,246,.18);padding:2px 6px;border-radius:5px;color:#a5f3fc}.study-ai-text del{color:#fda4af}@media(max-width:620px){.study-key-row{flex-wrap:wrap}.study-key-row input{flex-basis:100%}.study-key-row .btn{flex:1}}
+.study-ai-text .fraction{display:inline-flex;vertical-align:middle;flex-direction:column;text-align:center;line-height:1.2;margin:0 .15em}.study-ai-text .fraction>span:first-child{border-bottom:1px solid currentColor;padding:0 .25em .12em}.study-ai-text .fraction>span:last-child{padding:.12em .25em 0}.study-ai-text sup,.study-ai-text sub{font-size:.76em;line-height:0}.study-ai-text u{text-decoration-color:#22d3ee;text-decoration-thickness:2px;text-underline-offset:3px}.study-ai-text strong{font-weight:800;color:#f0abfc}
 </style>
 </head>
 <body>
@@ -600,35 +601,23 @@ function renderStudy(){
 }
 
 function formatStudyAI(value){
- var raw=String(value||"").replace(/\\r/g,"");
- var blocks=[],t=raw;
- t=t.replace(/```([\\s\\S]*?)```/g,function(_,code){blocks.push('<pre class="ai-code"><code>'+esc(code.trim())+'</code></pre>');return '\\n\\n@@BLOCK'+(blocks.length-1)+'@@\\n\\n'});
- t=esc(t);
- t=t.replace(/\\\\\\\\?\\\\\\\\?\\\\\\\\?\\\\/g,"/");
- t=t.replace(/\\\\\\\\text\\s*\\{([^{}]*)\\}/g,"$1");
- t=t.replace(/\\\\mathrm\\s*\\{([^{}]*)\\}/g,"$1");
- t=t.replace(/\\\\left|\\\\right/g,"");
- t=t.replace(/\\\\times/g," × ").replace(/\\\\cdot/g," · ").replace(/\\\\div/g," ÷ ");
- t=t.replace(/\\\\%/g,"%").replace(/\\\\,/g," ").replace(/\\\\;/g," ").replace(/\\\\!/g,"");
- t=t.replace(/\\\\sqrt\\s*\\{([^{}]+)\\}/g,"√($1)");
- t=t.replace(/\\\\frac\\s*\\{([^{}]+)\\}\\s*\\{([^{}]+)\\}/g,"($1) / ($2)");
- t=t.replace(/\\\\(?:begin|end)\\s*\\{(?:aligned|array|equation|math)\\}/g,"");
- t=t.replace(/\\\\(?:quad|qquad|displaystyle)/g," ");
- t=t.replace(/\\\\(?:textbf|mathbf)\\s*\\{([^{}]*)\\}/g,"<strong>$1</strong>");
- t=t.replace(/\\\\(?:underline|emph)\\s*\\{([^{}]*)\\}/g,"<u>$1</u>");
- t=t.replace(/\\\\(?:frac|text|mathrm|overline|hat|bar)\\s*\\{([^{}]*)\\}/g,"$1");
- t=t.replace(/\\\\\\\\\\\\/g,"\\n");
- t=t.replace(/\\\\\[|\\\\\]|\\\\\(|\\\\\)/g,"");
- t=t.replace(/\\\\\^\\s*\\{([^{}]+)\\}/g,"<sup>$1</sup>");
- t=t.replace(/\\\\_\\s*\\{([^{}]+)\\}/g,"<sub>$1</sub>");
- t=t.replace(/\\\\\\\\\\\\n/g,"\\n");
- t=t.replace(/\\n/g,"\\n");
- t=t.replace(/\\*\\*(.+?)\\*\\*/g,"<strong>$1</strong>").replace(/__(.+?)__/g,"<strong>$1</strong>");
- t=t.replace(/\\*(.+?)\\*/g,"<em>$1</em>");
- t=t.replace(/^###\\s+(.+)$/gm,"<h4>$1</h4>").replace(/^##\\s+(.+)$/gm,"<h3>$1</h3>").replace(/^#\\s+(.+)$/gm,"<h3>$1</h3>");
- t=t.replace(/^\\s*[-•]\\s+(.+)$/gm,"<li>$1</li>");
- t=t.replace(/(?:<li>[\\s\\S]*?<\\/li>\\n?)+/g,function(list){return "<ul>"+list+"</ul>"});
- return t.split(/\\n{2,}/).map(function(p){p=p.trim();if(!p)return "";var m=p.match(/^@@BLOCK(\\d+)@@$/);if(m)return blocks[+m[1]];if(/^<(h[3-4]|ul|ol|pre)/.test(p))return p;return "<p>"+p.replace(/\\n/g,"<br>")+"</p>"}).join("");
+ var raw=String(value||"").replace(/\r/g,"");
+ var blocks=[];
+ raw=raw.replace(/`{3}([\s\S]*?)`{3}/g,function(_,code){blocks.push('<pre class="ai-code"><code>'+esc(code.trim())+'</code></pre>');return "\n\n@@BLOCK"+(blocks.length-1)+"@@\n\n"});
+ var t=esc(raw);
+ t=t.replace(/\\text\s*\{([^{}]*)\}/g,"$1").replace(/\\mathrm\s*\{([^{}]*)\}/g,"$1");
+ t=t.replace(/\\left|\\right/g,"").replace(/\\times/g," × ").replace(/\\cdot/g," · ").replace(/\\div/g," ÷ ");
+ t=t.replace(/\\%/g,"%").replace(/\\,/g," ").replace(/\\;/g," ").replace(/\\!/g,"");
+ t=t.replace(/\\sqrt\s*\{([^{}]+)\}/g,"√($1)");
+ t=t.replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g,'<span class="fraction"><span>$1</span><span>$2</span></span>');
+ t=t.replace(/\\(?:begin|end)\s*\{(?:aligned|array|equation|math)\}/g,"").replace(/\\(?:quad|qquad|displaystyle)/g," ");
+ t=t.replace(/\\(?:textbf|mathbf)\s*\{([^{}]*)\}/g,"<strong>$1</strong>").replace(/\\(?:underline|emph)\s*\{([^{}]*)\}/g,"<u>$1</u>");
+ t=t.replace(/\^\{([^{}]+)\}/g,"<sup>$1</sup>").replace(/_\{([^{}]+)\}/g,"<sub>$1</sub>");
+ t=t.replace(/\\\\/g,"\n").replace(/\\\[|\\\]|\\\(|\\\)/g,"");
+ t=t.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/__(.+?)__/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");
+ t=t.replace(/^###\s+(.+)$/gm,"<h4>$1</h4>").replace(/^##\s+(.+)$/gm,"<h3>$1</h3>").replace(/^#\s+(.+)$/gm,"<h3>$1</h3>");
+ t=t.replace(/^\s*[-•]\s+(.+)$/gm,"<li>$1</li>").replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g,function(x){return "<ul>"+x+"</ul>"});
+ return t.split(/\n{2,}/).map(function(p){p=p.trim();if(!p)return "";var m=p.match(/^@@BLOCK(\d+)@@$/);if(m)return blocks[+m[1]];if(/^<(h[3-4]|ul|ol|pre)/.test(p))return p;return "<p>"+p.replace(/\n/g,"<br>")+"</p>"}).join("");
 }
 function renderStudyAI(){
  var modeOptions=[["simple","Explain simply (with an analogy)"],["step","Break it down step by step"],["worked","Show a worked example"],["quiz","Teach me, then quiz me"],["exam","Explain in CA-PRC exam style"]];
