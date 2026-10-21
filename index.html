@@ -738,6 +738,11 @@ function calculateInterest(){var p=Number(document.getElementById("calcP").value
 function calculateAnnuity(){var c=Number(document.getElementById("annuityC").value),r=Number(document.getElementById("annuityR").value)/100,n=Math.floor(Number(document.getElementById("annuityN").value)),type=document.getElementById("annuityType").value;if(c<0||r<0||n<1){toast("Enter non-negative payment/rate and at least one period.");return}var val;if(r===0)val=c*n;else if(type==="pv")val=c*(1-Math.pow(1+r,-n))/r;else val=c*(Math.pow(1+r,n)-1)/r;document.getElementById("annuityResult").innerHTML='<div class="small muted">'+(type==="pv"?"Present value":"Future value")+' of an ordinary annuity</div><div class="formula">'+fmt(val.toFixed(2))+' Rs.</div><div class="small muted">Assumes equal end-of-period payments and a constant period rate.</div>'}
 function handleAction(el){
  var act=el.dataset.action;if(!act)return;
+ if(act==="cloud-connect"){var u=(document.getElementById("cloudUrl")||{}).value||"",k=(document.getElementById("cloudKey")||{}).value||"";if(!u.trim()||!k.trim()){toast("Enter Supabase URL and publishable/anon key.");return}try{localStorage.setItem("rkca-supabase-config-v1",JSON.stringify({url:u.trim().replace(/\\/$/,""),key:k.trim()}))}catch(e){}connectSupabase();return}
+ if(act==="cloud-signup"){cloudAuth("signup");return}
+ if(act==="cloud-login"){cloudAuth("login");return}
+ if(act==="cloud-sync-now"){if(!cloudSync.client||!cloudSync.user){toast("Connect and sign in first.");return}pushCloudState();return}
+ if(act==="cloud-logout"){cloudSignOut();return}
  if(act==="go-home")showPage("home");if(act==="go-mock")showPage("mock");if(act==="go-study"){activeStudyTab="library";showPage("study")}if(act==="go-profile")showPage("profile");if(act==="go-mistakes"){activeStudyTab="mistakes";showPage("study")}
  if(act==="study-tab"){activeStudyTab=el.dataset.tab;renderStudy()}
  if(act==="ask-study-ai"){askStudyAI();return}
