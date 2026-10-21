@@ -600,13 +600,35 @@ function renderStudy(){
 }
 
 function formatStudyAI(value){
- var t=esc(String(value||""));
- t=t.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/__(.+?)__/g,"<strong>$1</strong>");
- t=t.replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/_(.+?)_/g,"<em>$1</em>");
- t=t.replace(/^###\s+(.+)$/gm,"<h4>$1</h4>").replace(/^##\s+(.+)$/gm,"<h3>$1</h3>");
- t=t.replace(/^[-•]\s+(.+)$/gm,"<li>$1</li>");
- t=t.replace(/(?:<li>[\s\S]*?<\/li>\n?)+/g,function(list){return "<ul>"+list+"</ul>"});
- return t.split(/\n{2,}/).map(function(p){p=p.trim();if(!p)return "";if(/^<(h[3-4]|ul|ol|pre)/.test(p))return p;return "<p>"+p.replace(/\n/g,"<br>")+"</p>"}).join("");
+ var raw=String(value||"").replace(/\\r/g,"");
+ var blocks=[],t=raw;
+ t=t.replace(/```([\\s\\S]*?)```/g,function(_,code){blocks.push('<pre class="ai-code"><code>'+esc(code.trim())+'</code></pre>');return '\\n\\n@@BLOCK'+(blocks.length-1)+'@@\\n\\n'});
+ t=esc(t);
+ t=t.replace(/\\\\\\\\?\\\\\\\\?\\\\\\\\?\\\\/g,"/");
+ t=t.replace(/\\\\\\\\text\\s*\\{([^{}]*)\\}/g,"$1");
+ t=t.replace(/\\\\mathrm\\s*\\{([^{}]*)\\}/g,"$1");
+ t=t.replace(/\\\\left|\\\\right/g,"");
+ t=t.replace(/\\\\times/g," × ").replace(/\\\\cdot/g," · ").replace(/\\\\div/g," ÷ ");
+ t=t.replace(/\\\\%/g,"%").replace(/\\\\,/g," ").replace(/\\\\;/g," ").replace(/\\\\!/g,"");
+ t=t.replace(/\\\\sqrt\\s*\\{([^{}]+)\\}/g,"√($1)");
+ t=t.replace(/\\\\frac\\s*\\{([^{}]+)\\}\\s*\\{([^{}]+)\\}/g,"($1) / ($2)");
+ t=t.replace(/\\\\(?:begin|end)\\s*\\{(?:aligned|array|equation|math)\\}/g,"");
+ t=t.replace(/\\\\(?:quad|qquad|displaystyle)/g," ");
+ t=t.replace(/\\\\(?:textbf|mathbf)\\s*\\{([^{}]*)\\}/g,"<strong>$1</strong>");
+ t=t.replace(/\\\\(?:underline|emph)\\s*\\{([^{}]*)\\}/g,"<u>$1</u>");
+ t=t.replace(/\\\\(?:frac|text|mathrm|overline|hat|bar)\\s*\\{([^{}]*)\\}/g,"$1");
+ t=t.replace(/\\\\\\\\\\\\/g,"\\n");
+ t=t.replace(/\\\\\[|\\\\\]|\\\\\(|\\\\\)/g,"");
+ t=t.replace(/\\\\\^\\s*\\{([^{}]+)\\}/g,"<sup>$1</sup>");
+ t=t.replace(/\\\\_\\s*\\{([^{}]+)\\}/g,"<sub>$1</sub>");
+ t=t.replace(/\\\\\\\\\\\\n/g,"\\n");
+ t=t.replace(/\\n/g,"\\n");
+ t=t.replace(/\\*\\*(.+?)\\*\\*/g,"<strong>$1</strong>").replace(/__(.+?)__/g,"<strong>$1</strong>");
+ t=t.replace(/\\*(.+?)\\*/g,"<em>$1</em>");
+ t=t.replace(/^###\\s+(.+)$/gm,"<h4>$1</h4>").replace(/^##\\s+(.+)$/gm,"<h3>$1</h3>").replace(/^#\\s+(.+)$/gm,"<h3>$1</h3>");
+ t=t.replace(/^\\s*[-•]\\s+(.+)$/gm,"<li>$1</li>");
+ t=t.replace(/(?:<li>[\\s\\S]*?<\\/li>\\n?)+/g,function(list){return "<ul>"+list+"</ul>"});
+ return t.split(/\\n{2,}/).map(function(p){p=p.trim();if(!p)return "";var m=p.match(/^@@BLOCK(\\d+)@@$/);if(m)return blocks[+m[1]];if(/^<(h[3-4]|ul|ol|pre)/.test(p))return p;return "<p>"+p.replace(/\\n/g,"<br>")+"</p>"}).join("");
 }
 function renderStudyAI(){
  var modeOptions=[["simple","Explain simply (with an analogy)"],["step","Break it down step by step"],["worked","Show a worked example"],["quiz","Teach me, then quiz me"],["exam","Explain in CA-PRC exam style"]];
