@@ -46,6 +46,19 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px color-mix(in srgb,v
 @media(prefers-reduced-motion:reduce){body:after,.app,.nav button.active,.toast{animation:none!important}.panel,.mini-card,.stat-card,.metric-card,.subject-card,.question-card,.result-card,.profile-card,.resource-card,.mock-card,.formula-card,button,.btn,.nav button,input,select,textarea,.progress-fill,.progress-bar,.bar-fill,.progress-ring{transition:none!important}}
 
 
+
+/* Comfortable exam reading: generous question/option spacing and responsive stacking */
+.speedrun-screen{padding:clamp(18px,3vw,32px)}
+.speed-question{max-width:1000px;font-size:clamp(20px,2.2vw,28px);line-height:1.65;letter-spacing:.005em;margin:clamp(24px,4vw,38px) 0;padding:clamp(16px,2.5vw,24px);border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--panel-bg) 70%,transparent);overflow-wrap:anywhere}
+.speed-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:24px 0}
+.speed-option{align-items:flex-start;min-height:94px;padding:20px;gap:16px;line-height:1.6;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+.speed-option>span:last-child{min-width:0;flex:1}
+.speed-option .letter{margin-top:1px}
+.speed-feedback{line-height:1.7;padding:22px;margin-top:24px}
+.speed-feedback p{margin:12px 0 18px;line-height:1.75;max-width:900px}
+@media(max-width:760px){.speed-options{grid-template-columns:minmax(0,1fr);gap:12px}.speed-option{min-height:72px;padding:16px}.speed-question{font-size:20px;line-height:1.6;margin:20px 0 14px;padding:16px}}
+@media(min-width:761px) and (max-width:1050px){.speed-options{gap:12px}.speed-option{padding:16px;min-height:84px}}
+
 /* Study-game layer: correct answers, completion moments, and streak energy */
 .speed-option.right,.option.right,.answer-option.correct{animation:rk-correct-pop 420ms cubic-bezier(.2,.8,.2,1) both}
 .speed-option.wrong,.option.wrong,.answer-option.incorrect{animation:rk-wrong-nudge 300ms ease both}
@@ -850,7 +863,7 @@ document.addEventListener("change",function(e){
  if(e.target.id==="themeSelector")applyTheme(e.target.value,true);
  if(e.target.id==="mockSubject"){renderMock.selectedSubject=e.target.value;updateMockChapter()}if(e.target.id==="mockVolume")updateMockChapter();
  if(e.target.id==="speedSubject"||e.target.id==="speedVolume")populateSpeedChapters();
- if(e.target.id==="speedFrom"||e.target.id==="speedTo")populateSpeedChapters();
+ if(e.target.id==="speedFrom"||e.target.id==="speedTo"){var si=document.getElementById("speedInfo"),ss=(document.getElementById("speedSubject")||{}).value||"prc1-fa",sf=document.getElementById("speedFrom"),st=document.getElementById("speedTo");if(si&&sf&&st)si.innerHTML="<b>"+questionsFor(ss).length+" questions available</b><div class=\"small muted\">Range contains "+speedPool(ss,sf.value,st.value).length+" questions. Each question is worth 2 marks.</div>";}
  if(e.target.id==="mindmapSubject"){renderMindmaps.subject=e.target.value;renderStudy()}
  if(e.target.id==="pdfInput")handlePdfFiles(e.target.files);
  if(e.target.id==="questionImportInput"&&e.target.files&&e.target.files[0])importQuestionBank(e.target.files[0]);
