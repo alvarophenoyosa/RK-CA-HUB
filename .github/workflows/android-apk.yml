@@ -56,9 +56,16 @@ jobs:
           RES="android/app/src/main/res"
           mkdir -p "$RES/drawable-nodpi" "$RES/mipmap-anydpi-v26" "$RES/values"
           python3 - <<'PY'
-          from PIL import Image
+          from PIL import Image, ImageDraw, ImageFont
           from pathlib import Path
-          source = Image.open("assets/rk-logo.png").convert("RGB")
+          source = Image.new("RGB", (1024, 1024), (0, 0, 0))
+          draw = ImageDraw.Draw(source)
+          font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 450)
+          bounds = draw.textbbox((0, 0), "RK", font=font)
+          x = (1024 - (bounds[2] - bounds[0])) // 2 - bounds[0]
+          y = (1024 - (bounds[3] - bounds[1])) // 2 - bounds[1]
+          draw.text((x, y), "RK", font=font, fill=(255, 255, 255))
+
           res = Path("android/app/src/main/res")
           sizes = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
           for density, px in sizes.items():
@@ -67,7 +74,7 @@ jobs:
               icon = source.resize((px, px), Image.Resampling.LANCZOS)
               icon.save(folder / "ic_launcher.png", optimize=True)
               icon.save(folder / "ic_launcher_round.png", optimize=True)
-          gray = Image.open("assets/rk-logo.png").convert("L")
+          gray = source.convert("L")
           alpha = gray.point(lambda value: max(0, min(255, int((value - 18) * 1.1))))
           bounds = alpha.point(lambda value: 255 if value > 8 else 0).getbbox()
           alpha = alpha.crop(bounds)

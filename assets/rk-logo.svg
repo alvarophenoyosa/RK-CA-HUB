@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="RK monogram">
+  <rect width="1024" height="1024" rx="120" fill="#000"/>
+  <g fill="#fff">
+    <path d="M100 790V234h280c145 0 226 72 226 198 0 95-47 161-133 188l154 170H484L357 642h-91v148H100zm166-281h111c51 0 79-24 79-68s-28-66-79-66H266v134z"/>
+    <path d="M590 234h164v212l174-212h-202L590 512v278h164V578l174 212H746L590 512z"/>
+  </g>
+</svg>
