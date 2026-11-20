@@ -1,0 +1,12 @@
+{
+  "appId": "com.rkcahub.app",
+  "appName": "RK CA HUB",
+  "webDir": "www",
+  "server": {
+    "url": "https://alvarophenoyosa.github.io/RK-CA-HUB/",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
