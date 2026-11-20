@@ -1,0 +1,99 @@
+name: Build RK CA HUB Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "capacitor.config.json"
+      - "www/**"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Capacitor
+        run: npm install --no-audit --no-fund
+
+      - name: Create local web directory placeholder
+        run: |
+          mkdir -p www
+          test -f www/index.html || printf '<!doctype html><html><head><meta charset="utf-8"><title>RK CA HUB</title></head><body>RK CA HUB loads from GitHub Pages.</body></html>' > www/index.html
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Reuse a consistent debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: rk-ca-hub-android-debug-keystore-v1
+
+      - name: Ensure debug signing key exists
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=Android Debug,O=RK CA HUB,C=PK" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk RK-CA-HUB-Android.apk
+
+      - name: Upload APK build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RK-CA-HUB-Android-APK
+          path: RK-CA-HUB-Android.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish APK to GitHub Releases
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-${{ github.sha }}
+          name: RK CA HUB Android APK
+          body: |
+            Android app wrapper for RK CA HUB.
+
+            This APK loads the live study dashboard from GitHub Pages, so website updates appear in the app without reinstalling the APK. An internet connection is required.
+          files: RK-CA-HUB-Android.apk
+          make_latest: true
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
